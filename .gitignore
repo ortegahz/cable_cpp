@@ -32,3 +32,5 @@ flagged/
 *.class
 
 cmake-build-debug/
+
+*.zip

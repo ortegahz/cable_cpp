@@ -5,6 +5,7 @@
 #include <string>
 #include <algorithm>
 #include "alg_cable_tem_detector.h"
+#include "alg_cable_tem_detector_interface.h"
 
 #define RAW_DATA_ONE_GROUP_LENGTH 64
 using namespace std;
@@ -42,13 +43,16 @@ std::vector<std::vector<std::string>> readCSV(const std::string& filename) {
 
 int main(int argc, char *argv[])
 {
+    alg_cable_temperature_detector_init(0);
+    int data[256] = {0};
+    alg_cable_temperature_detector_run(data, 0, 0, "20240806-123456");
     setbuf(stdout,NULL);
     printf("%s\n", "开始");
     cout << "开始" << endl;
     CableTemDet cable_tem_detector;
 
     int control_flag = 0b111;
-    control_flag = 0b010;
+    // control_flag = 0b010;
     cable_tem_detector.init(control_flag);
 
     // int data[256] = {0};

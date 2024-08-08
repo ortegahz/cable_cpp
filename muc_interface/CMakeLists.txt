@@ -6,5 +6,6 @@ project(demo)
 
 add_executable(demo
     main.cpp
+    alg_cable_tem_detector_interface.cpp
     alg_cable_tem_detector.cpp)
 
