@@ -1,0 +1,34 @@
+events.out.tfevents.*
+# pycharm cache dir
+.idea/
+
+# run python cache dir
+__pycache__/
+
+*.h5
+*.pyd
+
+build/
+model/
+models/
+logs/
+log/
+backup/
+
+result/
+results/
+save_graph/
+models_train_mnist/
+slim/
+*.db
+*.so
+*.sqlite3
+
+node_modules/
+
+flagged/
+
+# java
+*.class
+
+cmake-build-debug/
