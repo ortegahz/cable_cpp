@@ -25,12 +25,15 @@
 #endif
 #endif
 
-#define MAX_LENGTH 64
+#define MAX_LENGTH 256
 #define ONE_GROUP_DATA_LENGTH 64
 #define CONSTANT_TEMPERATUE_THRESHOLD 100
 #define BEAR_TIME_THRESHOLD 10
 #define ACC_TIME_THRESHOLD 32
 #define SAVE_ARCHS_MAX_NUM_PER_PEAK 63
+
+#define FIND_PEAK_WINDOW_SIZE 16
+#define FIND_PEAK_TEMP_TH  2.5
 
 // arch struct
 typedef struct ArchInfo

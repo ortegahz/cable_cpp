@@ -107,14 +107,19 @@ int main(int argc, char *argv[])
             }
             data[j] = stoi(one_line_data[6+j]);
         }
-        if (idx == 0)
+        if (i == 100)
+        {
+            int a = 0;
+        }
+        // if (idx == 0)
         {
             res = cable_tem_detector.run(data, idx, cable_idx);
 
             // cable_tem_detector.run(data, idx, cable_idx);
-            printf("process :%d, group:%s, res: %d \n", i, group_id_tmp.c_str(), res);
+            printf("%s %s, process :%d, group:%s, res: %d \n", one_line_data[0].c_str(), one_line_data[1].c_str(), i, group_id_tmp.c_str(), res);
             // printf("process :%d, res:%d \n", i, res);
         }
+        if (i > 128) break;
     }
     printf("program over");
     return 0;
