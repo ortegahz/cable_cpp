@@ -16,7 +16,7 @@
 #include <utility>
 #include <algorithm>
 
-#define CABLE_TEMP_DEBUG 1
+#define CABLE_TEMP_DEBUG 0
 #if defined(_WIN32)
 #if CABLE_TEMP_DEBUG
 #define LOGI(fmt, ...) printf("wx_test: line %d, " fmt"\n", __LINE__,##__VA_ARGS__)
@@ -27,19 +27,19 @@
 
 #define MAX_LENGTH 256
 #define ONE_GROUP_DATA_LENGTH 64
-#define CONSTANT_TEMPERATUE_THRESHOLD 100
 #define BEAR_TIME_THRESHOLD 10
 #define ACC_TIME_THRESHOLD 32
 #define SAVE_ARCHS_MAX_NUM_PER_PEAK 63
-
 
 #define FIND_PEAK_WINDOW_SIZE 16
 // SAVE_ACTULLY_BUFFER_SIZE = FIND_PEAK_WINDOW_SIZE * 2
 #define SAVE_ACTULLY_BUFFER_SIZE 32
 #define FIND_PEAK_TEMP_TH  2.5
-#define ARCH_TREND_TH  4
-#define RELIABLE_ARCH_RATIO_TH  0.8
 
+#define ALARM_CONSTANT_TEMPERATUE_THRESHOLD 100
+#define ALARM_ARCH_TREND_TH  4
+#define ALARM_ARCH_RATIO_TH  0.8
+#define ALARM_TEMPERATURE_RISE_THRESHLOD 8.0
 
 // arch struct
 typedef struct ArchInfo
