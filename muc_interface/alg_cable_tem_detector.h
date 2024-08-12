@@ -32,8 +32,14 @@
 #define ACC_TIME_THRESHOLD 32
 #define SAVE_ARCHS_MAX_NUM_PER_PEAK 63
 
+
 #define FIND_PEAK_WINDOW_SIZE 16
+// SAVE_ACTULLY_BUFFER_SIZE = FIND_PEAK_WINDOW_SIZE * 2
+#define SAVE_ACTULLY_BUFFER_SIZE 32
 #define FIND_PEAK_TEMP_TH  2.5
+#define ARCH_TREND_TH  4
+#define RELIABLE_ARCH_RATIO_TH  0.8
+
 
 // arch struct
 typedef struct ArchInfo
@@ -44,6 +50,8 @@ typedef struct ArchInfo
     int p_end;
     int arch_trend;
     int timestamp;
+    // 储存实际采集到的温度
+    signed char temp[SAVE_ACTULLY_BUFFER_SIZE] = {0};
 }ArchInfo;
 typedef struct ArchInfoArr
 {
@@ -60,6 +68,7 @@ public:
     int run(int *_data, int _idx, int _cable_idx);
 
 private:
+    int m_idx;
     bool alarm_gb_switch_flag = true;
     bool alarm_temdiff_switch_flag = true;
     bool alarm_shape_switch_flag = true;
@@ -72,8 +81,8 @@ private:
     int m_timestamp = 0;
     std::vector<ArchInfoArr> m_analyse_window;
     int trackArch(ArchInfo &_arch, int _peak_win);
-    int detactArch(float *_arr, std::vector<int> _peak_idx, int _MAX_LENGTH, int _peak_win);
-    int deleteOldArchData();
+    int detactArch(int *_cur_data, int _idx, float *_subbg, std::vector<int> _peak_idx, int _MAX_LENGTH, int _peak_win);
+    int deleteOldArchData(int _cur_time);
 
     int alarmShape(int _arch_trend_th, float _reliable_arch_ratio_th);
     int alarmTemperatureRise(float _temperature_rise_thre);

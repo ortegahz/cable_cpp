@@ -34,3 +34,4 @@ flagged/
 cmake-build-debug/
 
 *.zip
+tmp/

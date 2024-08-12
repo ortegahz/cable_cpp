@@ -67,7 +67,7 @@ int CableTemDet::updateBackgroundTemperature(int *_data, int _idx)
         if (background_temperatures_confirm_matrix == pow(2, MAX_LENGTH / 64) - 1)
         {
             background_temperatures_confirm_flag = true;
-            LOGI("background_temperatures init full");
+            LOGI("======================== background_temperatures init full ========================");
         }
         else
         {
@@ -81,8 +81,8 @@ int CableTemDet::updateBackgroundTemperature(int *_data, int _idx)
     {
         // TODO
         // judgeInputData();
-        m_background_temperatures[_idx*ONE_GROUP_DATA_LENGTH] = ALPHA * _data[i] +
-            ALPHA2 * m_background_temperatures[_idx*ONE_GROUP_DATA_LENGTH];
+        m_background_temperatures[_idx*ONE_GROUP_DATA_LENGTH + i] = ALPHA * _data[i] +
+            ALPHA2 * m_background_temperatures[_idx*ONE_GROUP_DATA_LENGTH + i];
     }
 
 
@@ -216,7 +216,7 @@ int CableTemDet::trackArch(ArchInfo &_arch, int _peak_win=16)
     return track_id;
 }
 
-int CableTemDet::detactArch(float *_subbg, std::vector<int> _peak_idx, int _MAX_LENGTH, int _peak_win=16)
+int CableTemDet::detactArch(int *_cur_data, int _idx, float *_subbg, std::vector<int> _peak_idx, int _MAX_LENGTH, int _peak_win=16)
 {
     for (size_t i = 0; i < _peak_idx.size(); i++)
     {
@@ -225,6 +225,12 @@ int CableTemDet::detactArch(float *_subbg, std::vector<int> _peak_idx, int _MAX_
         int p_end = min(_MAX_LENGTH - 1, peak + _peak_win/2);
         int arch_trend = calculateArchTrend(_subbg, peak, p_start, p_end);
         ArchInfo cur_arch = {peak, m_current_temperatures[peak], p_start, p_end, arch_trend, m_timestamp};
+        // int win_start = max(0, peak - SAVE_ACTULLY_BUFFER_SIZE/2);
+        // int win_end = min(_MAX_LENGTH, peak + SAVE_ACTULLY_BUFFER_SIZE/2);
+        // for (int j = 0; j < SAVE_ACTULLY_BUFFER_SIZE; j++)
+        // {
+        //
+        // }
         int track_id = trackArch(cur_arch, _peak_win);
         if (track_id >= m_analyse_window.size())
         {
@@ -238,13 +244,12 @@ int CableTemDet::detactArch(float *_subbg, std::vector<int> _peak_idx, int _MAX_
             m_analyse_window[track_id].archs.push_back(cur_arch);
         }
         if (m_analyse_window[track_id].archs.size() < 2) continue;
-        // TODO 前后帧间隔时间太长，清理掉之前帧，重新累计
         // LOGI("track_id: %d, 累计时长：%d", m_analyse_window[track_id].arch_id, m_analyse_window[track_id].archs[m_analyse_window[track_id].archs.size()-1].timestamp - m_analyse_window[track_id].archs[0].timestamp);
     }
     return 0;
 }
 
-int CableTemDet::deleteOldArchData()
+int CableTemDet::deleteOldArchData(int _cur_time)
 {
     for (size_t i = 0; i < m_analyse_window.size(); i++)
     {
@@ -253,13 +258,17 @@ int CableTemDet::deleteOldArchData()
         {
             delete_p_end = 30;
         }
-        for (int j = (m_analyse_window[i].archs.size() - 1); j > 0; j--)
+        // for (int j = (m_analyse_window[i].archs.size() - 1); j > 0; j--)
+        // {
+        //     if (m_analyse_window[i].archs[j].timestamp - m_analyse_window[i].archs[j - 1].timestamp > BEAR_TIME_THRESHOLD)
+        //     {
+        //         delete_p_end = j - 1;
+        //         break;
+        //     }
+        // }
+        if (m_timestamp - m_analyse_window[i].archs[m_analyse_window[i].archs.size() - 1].timestamp> BEAR_TIME_THRESHOLD)
         {
-            if (m_analyse_window[i].archs[j].timestamp - m_analyse_window[i].archs[j - 1].timestamp > BEAR_TIME_THRESHOLD)
-            {
-                delete_p_end = j - 1;
-                break;
-            }
+            delete_p_end = m_analyse_window[i].archs.size() - 1;
         }
         if (delete_p_end >= 0)
         {
@@ -289,7 +298,7 @@ int CableTemDet::alarmShape(int _arch_trend_th=4, float _reliable_arch_ratio_th=
             alarm = 1;
             res = 3;
         }
-        LOGI("alarm shape: track_id: %d, alarm: %d, reliable_arch_count：%d, ratio: %.2f", m_analyse_window[i].arch_id, alarm, reliable_arch_count, float(reliable_arch_count) / used_arch_num);
+        LOGI("[$%d$]alarm shape: track_id: %d, alarm: %d, reliable_arch_count：%d, ratio: %.2f, peakid: %d", m_idx, m_analyse_window[i].arch_id, alarm, reliable_arch_count, float(reliable_arch_count) / used_arch_num, m_analyse_window[i].archs[m_analyse_window[i].archs.size() - 1].peak);
     }
     return res;
 }
@@ -310,13 +319,14 @@ int CableTemDet::alarmTemperatureRise(float _temperature_rise_thre=8)
             alarm = 1;
             res = 1;
         }
-        // LOGI("alarm temp rise: track_id: %d, archs num: %d, alarm: %d, temp_diff：%f, time_diff: %f, rise_rate: %f", m_analyse_window[i].arch_id, m_analyse_window[i].archs.size(), alarm, temp_diff, time_diff, (temp_diff / time_diff) * 60);
+        LOGI("alarm temp rise: track_id: %d, archs num: %d, alarm: %d, temp_diff：%f, time_diff: %f, rise_rate: %f", m_analyse_window[i].arch_id, m_analyse_window[i].archs.size(), alarm, temp_diff, time_diff, (temp_diff / time_diff) * 60);
     }
     return res;
 }
 
 int CableTemDet::run(int *_data, int _idx, int _cable_idx)
 {
+    m_idx = _idx;//for debug
     m_timestamp++;
     int alarm = 0;
     //LOGI("entry cable temperature detector algorithm");
@@ -334,15 +344,28 @@ int CableTemDet::run(int *_data, int _idx, int _cable_idx)
     }
 
     res = updateBackgroundTemperature(_data, _idx);
+    // LOGI("bg[192] = %f, _data[0]: %d", m_background_temperatures[192], _data[0]);
+    // printf("wx_test: bgval: ");
+    // for (int i = 0; i < MAX_LENGTH; i++)
+    // {
+    //     printf("%.1f,", m_background_temperatures[i]);
+    // }
+    // printf("\n");
+
     if (res < 0)
     {
         return res;
     }
 
     float sbtract_background[MAX_LENGTH] = {0};
-    // 由于一次只传入64个点的数据，其他点保持之前数据不变，当有新的数据输入后再更新；
+    // 由于一次只传入64个点的数据，其他点差值为0
     calSbtractBackground(sbtract_background, _data, _idx);
-
+    // printf("wx_test: sbval: ");
+    // for (int i = 0; i < MAX_LENGTH; i++)
+    // {
+    //     printf("%.1f,", sbtract_background[i]);
+    // }
+    // printf("\n");
 
     // float sbtract_background1[MAX_LENGTH] = {0.0,0.429,0.741,0.741,0.741,0.741,0.741,-0.701,-1.16,-1.43,-1.46,-1.26,-0.879,-0.435,-0.043,0.188,0.189,-0.0515,-0.488,-1.03,-1.54,-1.93,-2.1,-2.03,-1.74,-1.32,-0.88,-0.546,-0.409,-0.515,-0.85,-1.34,-1.89,-2.36,-2.66,-2.73,-2.55,-2.19,-1.75,-1.34,-1.09,-1.05,-1.26,-1.68,-2.21,-2.74,-3.15,-3.35,-3.31,-3.04,-2.63,-2.19,-1.84,-1.67,-1.74,-2.05,-2.53,-3.07,-3.56,-3.89,-3.99,-3.84,-3.5,-3.07,};
     // float sbtract_background1[MAX_LENGTH] = {0.0,0.529,0.941,0.941,0.941,0.941,0.941,-0.000783,-0.357,-0.528,-0.459,-0.156,0.321,0.865,1.36,1.69,1.79,1.65,1.31,0.875,0.456,0.17,0.1,0.275,0.663,1.18,1.72,2.15,2.39,2.38,2.15,1.76,1.31,0.938,0.739,0.774,1.05,1.51,2.05,2.56,2.91,3.05,2.94,2.62,2.19,1.76,1.45,1.35,1.49,1.86,2.37,2.91,3.36,3.63,3.66,3.45,3.07,2.63,2.24,2.01,2.01,2.26,2.7,3.23,};
@@ -351,25 +374,25 @@ int CableTemDet::run(int *_data, int _idx, int _cable_idx)
     peak_idx = findPeaks(sbtract_background, FIND_PEAK_WINDOW_SIZE, FIND_PEAK_TEMP_TH);
 
     // 检测与跟踪算法的关键参数----拱形(arch)
-    detactArch(sbtract_background, peak_idx, MAX_LENGTH);
+    detactArch(_data, _idx, sbtract_background, peak_idx, MAX_LENGTH);
 
     //删除好久没用的arch数据，减少内存占用
-    deleteOldArchData();
+    deleteOldArchData(1);
 
-    // alarmShape
+    // 形状报警
     if (alarm_shape_switch_flag)
     {
-        res = 10*alarmShape(1, 0.8);
+        res = 10*alarmShape(ARCH_TREND_TH, RELIABLE_ARCH_RATIO_TH);
         if (res > 0) alarm += 10;
     }
 
-    // TODO
-    // alarmTempRise
+    // 升温报警
     if (alarm_temdiff_switch_flag)
     {
         res = alarmTemperatureRise();
         if (res > 0) alarm += 100;
     }
+
     if (alarm > 0) return alarm;
     else return res;
 }
