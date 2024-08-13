@@ -37,10 +37,10 @@ int alg_cable_temperature_detector_init(int _control);
  *    int *_data: 温度数据，必须64长度
  *    int _idx:   位置索引
  *    int _cable_idx: 那一条线缆
- *    char *timestamp:  时间戳
+ *    uint32_t timestamp:  时间戳
  * @return {0: normal, 1: alarm, <0: error}
  */
-int alg_cable_temperature_detector_run(int *_data, int _idx, int _cable_idx, char *timestamp);
+int alg_cable_temperature_detector_run(int8_t *_data, int _idx, int _cable_idx, uint32_t _timestamp);
 
 #ifdef __cplusplus
 }
