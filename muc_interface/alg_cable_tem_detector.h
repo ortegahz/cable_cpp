@@ -13,8 +13,6 @@
 #include <iostream>
 #include <string>
 #include <vector>
-#include <utility>
-#include <algorithm>
 #include <stdint.h>
 #if defined(__arm__)
 #include <rtthread.h>
@@ -39,10 +37,11 @@
 #endif
 #endif
 
-#define MAX_LENGTH 512
+#define MAX_LENGTH 1024
 #define ONE_GROUP_DATA_LENGTH 64
-#define TIME_INIT_CNT_TH 64
-#define TIME_RUN_CNT_TH 128
+
+#define TIME_INIT_CNT_TH 16
+#define TIME_RUN_CNT_TH 64
 #define BEAR_TIME_THRESHOLD 10
 #define ACC_TIME_THRESHOLD 32
 #define SAVE_ARCHS_MAX_NUM_PER_PEAK 63
@@ -51,13 +50,18 @@
 // SAVE_ACTULLY_BUFFER_SIZE = FIND_PEAK_WINDOW_SIZE * 2
 #define SAVE_ACTULLY_BUFFER_SIZE 32
 #define FIND_PEAK_TEMP_TH  2.5
+#define ANALYSE_WINDOW_MAX  16
 
 #define ALARM_CONSTANT_TEMPERATUE_THRESHOLD 100
 #define ALARM_ARCH_TREND_TH  4
 #define ALARM_ARCH_RATIO_TH  0.8
 #define ALARM_TEMPERATURE_RISE_THRESHLOD 8.0
 
-// arch struct
+typedef struct PeakInfo{
+    int index;
+    float value;
+} PeakInfo;
+
 typedef struct ArchInfo
 {
     int peak;
@@ -68,12 +72,15 @@ typedef struct ArchInfo
     int timestamp;
     // 储存实际采集到的温度
     signed char temp[SAVE_ACTULLY_BUFFER_SIZE] = {0};
-}ArchInfo;
+} ArchInfo;
+
 typedef struct ArchInfoArr
 {
     int arch_id;
-    std::vector<ArchInfo> archs;
-}ArchInfoArr;
+    ArchInfo archs[SAVE_ARCHS_MAX_NUM_PER_PEAK + 1];
+    int arch_count;
+} ArchInfoArr;
+
 // cable temperature detector
 class CableTemDet
 {
@@ -85,21 +92,29 @@ public:
 
 private:
     int m_idx;
+    bool m_init_flag = false;
     bool alarm_gb_switch_flag = true;
     bool alarm_temdiff_switch_flag = true;
     bool alarm_shape_switch_flag = true;
     bool background_temperatures_confirm_flag = false;
     int background_temperatures_confirm_matrix = 0;
-    float m_background_temperatures[MAX_LENGTH] = {};
-    float m_current_temperatures[MAX_LENGTH] = {};
+    float m_background_temperatures[MAX_LENGTH] = {0};
+    float m_current_temperatures[MAX_LENGTH] = {0};
+    float m_sbtract_background[MAX_LENGTH] = {0};
     int updateBackgroundTemperature(int *_data, int _idx);
     int calSbtractBackground(float *_sbbg, int *_data, int _idx);
     int m_timestamp = 0;
     int m_timecount = 0;
 
-    std::vector<ArchInfoArr> m_analyse_window;
+    PeakInfo peaks_info[MAX_LENGTH];
+    PeakInfo result_peak_info[MAX_LENGTH];
+    int result_peak_count = 0;
+    int findPeaks(float *_arr, int _win, float th);
+
+    ArchInfoArr m_analyse_window[ANALYSE_WINDOW_MAX];
+    int m_analyse_window_count = 0;
     int trackArch(ArchInfo &_arch, int _peak_win);
-    int detactArch(int *_cur_data, int _idx, float *_subbg, std::vector<int> _peak_idx, int _MAX_LENGTH, int _peak_win);
+    int detactArch(int *_cur_data, int _idx, float *_subbg, int _MAX_LENGTH, int _peak_win);
     int deleteOldArchData(int _cur_time);
 
     int alarmShape(int _arch_trend_th, float _reliable_arch_ratio_th);

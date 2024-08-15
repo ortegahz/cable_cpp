@@ -13,4 +13,3 @@ add_executable(mcu
         main_mcu.cpp
         alg_cable_tem_detector_interface.cpp
         alg_cable_tem_detector.cpp)
-
