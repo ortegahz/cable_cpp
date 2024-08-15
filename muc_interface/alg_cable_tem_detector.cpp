@@ -1,7 +1,7 @@
-#include "alg_cable_tem_detector.h"
-
 #include <string.h>
 #include <cmath>
+#include "alg_cable_tem_detector.h"
+
 
 using namespace std;
 
@@ -23,16 +23,17 @@ int CableTemDet::init(int _control)
     return 0;
 }
 
-static int alarmGB(int *_data, int _idx)
+static int alarmGB(int *_data, int8_t *_alarm_status, int8_t *_alarm_val, int _idx)
 {
     int res = 0;
     for (int i = 0; i < ONE_GROUP_DATA_LENGTH; i++)
     {
         if (_data[i] > ALARM_CONSTANT_TEMPERATUE_THRESHOLD)
         {
-            LOGI("alarm gb: %d \r\n", _data[i]);
+            LOGD("alarm gb: %d \r\n", _data[i]);
+            _alarm_status[_idx*ONE_GROUP_DATA_LENGTH + i] = 2;
+            _alarm_val[_idx*ONE_GROUP_DATA_LENGTH + i] = _data[i];
             res = 1;
-            break;
         }
     }
     return res;
@@ -130,8 +131,10 @@ int CableTemDet::findPeaks(float *_arr, int _win, float th)
 
     // step2. selected by win by nms-algorithm
     int peaks_count = 0;
-    for (int i = 0; i < MAX_LENGTH; i++) {
-        if (peaks[i]) {
+    for (int i = 0; i < MAX_LENGTH; i++)
+    {
+        if (peaks[i])
+        {
             peaks_info[peaks_count].index = i;
             peaks_info[peaks_count].value = _arr[i];
             peaks_count++;
@@ -147,11 +150,14 @@ int CableTemDet::findPeaks(float *_arr, int _win, float th)
     }
     result_peak_count = 0;
 
-    for (int i = 0; i < peaks_count; i++) {
+    for (int i = 0; i < peaks_count; i++)
+    {
         if (suppressed[i]) continue;
         result_peak_info[result_peak_count++] = peaks_info[i];
-        for (int j = i + 1; j < peaks_count; j++) {
-            if (abs(peaks_info[i].index - peaks_info[j].index) < _win) {
+        for (int j = i + 1; j < peaks_count; j++)
+        {
+            if (abs(peaks_info[i].index - peaks_info[j].index) < _win)
+            {
                 suppressed[j] = true;
             }
         }
@@ -232,7 +238,8 @@ int CableTemDet::detactArch(int *_cur_data, int _idx, float *_subbg, int _MAX_LE
 
         int win_start = fmax(0, peak - SAVE_ACTULLY_BUFFER_SIZE / 2);
         int win_end = fmin(MAX_LENGTH, peak + SAVE_ACTULLY_BUFFER_SIZE / 2);
-        for (int j = win_start; j < win_end; j++) {
+        for (int j = win_start; j < win_end; j++)
+        {
             cur_arch.temp[j - win_start] = m_current_temperatures[j];
         }
 
@@ -244,7 +251,9 @@ int CableTemDet::detactArch(int *_cur_data, int _idx, float *_subbg, int _MAX_LE
             m_analyse_window[track_id].arch_count = 0;
             m_analyse_window[track_id].archs[m_analyse_window[track_id].arch_count++] = cur_arch;
             m_analyse_window_count++;
-        } else if (track_id >= 0) {
+        }
+        else if (track_id >= 0)
+        {
             m_analyse_window[track_id].archs[m_analyse_window[track_id].arch_count++] = cur_arch;
         }
 
@@ -303,6 +312,8 @@ int CableTemDet::alarmShape(int _arch_trend_th=4, float _reliable_arch_ratio_th=
         {
             alarm = 1;
             res = 10;
+            m_alarm_status[m_analyse_window[i].archs[m_analyse_window[i].arch_count - 1].peak] = 3;
+            m_alarm_val[m_analyse_window[i].archs[m_analyse_window[i].arch_count - 1].peak] = m_analyse_window[i].archs[m_analyse_window[i].arch_count - 1].peak_val;
         }
         LOGD("[DEBUG] track_id: %d alarm: %d, cnt:%d\r\n", m_analyse_window[i].arch_id, alarm, reliable_arch_count);
         //LOGD("[DEBUG][%d] alarm shape: track_id: %d, alarm: %d, reliable_arch_count：%d, ratio: %.2f, peakid: %d \r\n", m_idx, m_analyse_window[i].arch_id, alarm, reliable_arch_count, float(reliable_arch_count) / used_arch_num, m_analyse_window[i].archs[m_analyse_window[i].arch_count - 1].peak);
@@ -341,9 +352,11 @@ int CableTemDet::alarmTemperatureRise(float _temperature_rise_thre)
         if ((temp_diff / time_diff) * 60 > _temperature_rise_thre)
         {
             alarm = 1;
+            m_alarm_status[m_analyse_window[i].archs[m_analyse_window[i].arch_count - 1].peak] = 1;
+            m_alarm_val[m_analyse_window[i].archs[m_analyse_window[i].arch_count - 1].peak] = m_analyse_window[i].archs[m_analyse_window[i].arch_count - 1].peak_val;
         }
         // notice: LOG不要太复杂，否则可能栈爆掉
-        LOGD("[DEBUG][%d] rise: track_id: %d, archs num: %d, alarm: %d\r\n",m_idx, m_analyse_window[i].arch_id, m_analyse_window[i].arch_count, alarm);
+        LOGD("[DEBUG][%d] rise: track_id: %d, archs num: %d, alarm: %d, rise_rate: %.2f\r\n",m_idx, m_analyse_window[i].arch_id, m_analyse_window[i].arch_count, alarm,  (temp_diff / time_diff) * 60);
         //LOGD("[DEBUG][%d] alarm temp rise: track_id: %d, archs num: %d, alarm: %d, temp_diff：%.1f, time_diff: %.1f, rise_rate: %.2f, val1:%.2f, val2:%.2f, peakid: %d \n", m_idx, m_analyse_window[i].arch_id, m_analyse_window[i].arch_count, alarm, temp_diff, time_diff, (temp_diff / time_diff) * 60, last_arch_val_max, start_arch_val_max, m_analyse_window[i].archs[m_analyse_window[i].arch_count - 1].peak);
     }
     return alarm;
@@ -367,12 +380,6 @@ int CableTemDet::run(int *_data, int _idx, int _cable_idx, uint32_t _timestamp)
         return -2; // index out of max range
     }
 
-    if (alarm_gb_switch_flag)
-    {
-        res = alarmGB(_data, _idx);
-        if (res > 0) alarm = 1;
-    }
-
     res = updateBackgroundTemperature(_data, _idx);
     if (res < 0)
     {
@@ -383,6 +390,19 @@ int CableTemDet::run(int *_data, int _idx, int _cable_idx, uint32_t _timestamp)
     if (m_timecount <= TIME_RUN_CNT_TH)
     {
         return -3;
+    }
+
+    // 清空报警状态
+    for (int i = 0; i < MAX_LENGTH; i++)
+    {
+        m_alarm_status[i] = 0;
+        m_alarm_val[i] = 0;
+    }
+
+    if (alarm_gb_switch_flag)
+    {
+        res = alarmGB(_data, m_alarm_status, m_alarm_val, _idx);
+        if (res > 0) alarm = 1;
     }
 
     // 计算当前值与本底值的温度差，由于一次只传入64个点的数据，其他点差值为0

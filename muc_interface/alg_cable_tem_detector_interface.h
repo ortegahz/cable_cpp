@@ -15,13 +15,19 @@ extern "C"
 {
 #endif
 
-#include <stdbool.h>
-#include <stdio.h>
 #include <stdint.h>
+
+#define ALARM_INFO_MAX_NUM 16
+typedef struct {
+    int alarm_type;
+    int alarm_temp;
+    int addr;
+} AlarmInfo;
+extern AlarmInfo alarm_info[ALARM_INFO_MAX_NUM];
 
 /**
  * @description:
- * @param int _control
+ * @param int _control: 控制是否报警
  *    0b000：不报警
  *    0b001：国标报警
  *    0b010：升温报警
@@ -38,9 +44,10 @@ int alg_cable_temperature_detector_init(int _control);
  *    int _idx:   位置索引
  *    int _cable_idx: 那一条线缆
  *    uint32_t timestamp:  时间戳
- * @return {0: normal, 1: alarm, <0: error}
+ *    AlarmInfo *alarm_info 报警信息
+ * @return {0: normal, <0: error/没初始化完，>0: 报警点的数量, 依据数量从}
  */
-int alg_cable_temperature_detector_run(int8_t *_data, int _idx, int _cable_idx, uint32_t _timestamp);
+int alg_cable_temperature_detector_run(int8_t *_data, int _idx, int _cable_idx, uint32_t _timestamp, AlarmInfo *alarm_info);
 
 #ifdef __cplusplus
 }

@@ -91,18 +91,26 @@ int main(int argc, char *argv[])
             }
             data[j] = stoi(one_line_data[6+j]);
         }
-        if (i == 450)
+        if (i == 80)
         {
             int a = 0;
+            data[32] = 103;
         }
         // if (idx == 0)
         {
             // printf("process :%d, group:%s \n", i, group_id_tmp.c_str());
-            res = alg_cable_temperature_detector_run(data, idx, cable_idx, i);
-            printf("********* [[%d]], %s %s, group:%s, res: %d *********\n", i, one_line_data[0].c_str(), one_line_data[1].c_str(), group_id_tmp.c_str(), res);
+            res = alg_cable_temperature_detector_run(data, idx*64, cable_idx, i, alarm_info);
+            //printf("********* [[%d]], %s %s, group:%s, res: %d *********\n", i, one_line_data[0].c_str(), one_line_data[1].c_str(), group_id_tmp.c_str(), res);
+            if (res > 0)
+            {
+                for (int j = 0; j < res; j++)
+                {
+                    printf("********* [[%d]], group:%s, res: %d, %d, %d *********\n", i, group_id_tmp.c_str(), alarm_info[j].alarm_type, alarm_info[j].alarm_temp, alarm_info[j].addr);
+                }
+            }
             // printf("process :%d, res:%d \n", i, res);
         }
-        if (i > 256) break;
+        // if (i > 256) break;
     }
     printf("program over");
     return 0;

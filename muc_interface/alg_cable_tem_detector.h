@@ -18,7 +18,7 @@
 #include <rtthread.h>
 #endif
 
-#define CABLE_TEMP_DEBUG 1
+#define CABLE_TEMP_DEBUG 0
 #if CABLE_TEMP_DEBUG
 #if defined(_WIN32)
 #define LOGI(fmt, ...) printf("wx_test: line %d, " fmt, __LINE__, ##__VA_ARGS__)
@@ -89,6 +89,8 @@ public:
     ~CableTemDet();
     int init(int _control);
     int run(int *_data, int _idx, int _cable_idx, uint32_t _timestamp);
+    int8_t m_alarm_status[MAX_LENGTH];
+    int8_t m_alarm_val[MAX_LENGTH];
 
 private:
     int m_idx;
