@@ -18,7 +18,7 @@
 #include <rtthread.h>
 #endif
 
-#define CABLE_TEMP_DEBUG 0
+#define CABLE_TEMP_DEBUG 1
 #if CABLE_TEMP_DEBUG
 #if defined(_WIN32)
 #define LOGI(fmt, ...) printf("wx_test: line %d, " fmt, __LINE__, ##__VA_ARGS__)

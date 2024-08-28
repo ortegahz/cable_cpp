@@ -50,6 +50,7 @@ int main(int argc, char *argv[])
     int control_flag = 0b111;
     // CableTemDet cable_tem_detector;
     // cable_tem_detector.init(control_flag);
+    AlarmInfo alarmList[ALARM_INFO_MAX_NUM];
     alg_cable_temperature_detector_init(control_flag);
 
     string filepath = "../data/test_index.txt";
@@ -99,16 +100,16 @@ int main(int argc, char *argv[])
         // if (idx == 0)
         {
             // printf("process :%d, group:%s \n", i, group_id_tmp.c_str());
-            res = alg_cable_temperature_detector_run(data, idx*64, cable_idx, i, alarm_info);
+            res = alg_cable_temperature_detector_run(data, idx*64, cable_idx, i, alarmList);
             //printf("********* [[%d]], %s %s, group:%s, res: %d *********\n", i, one_line_data[0].c_str(), one_line_data[1].c_str(), group_id_tmp.c_str(), res);
             if (res > 0)
             {
                 for (int j = 0; j < res; j++)
                 {
-                    printf("********* [[%d]], group:%s, res: %d, %d, %d *********\n", i, group_id_tmp.c_str(), alarm_info[j].alarm_type, alarm_info[j].alarm_temp, alarm_info[j].addr);
+                    // printf("********* [[%d]], group:%s, res: %d, %d, %d *********\n", i, group_id_tmp.c_str(), alarmList[j].alarm_type, alarmList[j].alarm_temp, alarmList[j].addr);
                 }
             }
-            // printf("process :%d, res:%d \n", i, res);
+            printf("process :%d, res:%d \n", i, res);
         }
         // if (i > 256) break;
     }

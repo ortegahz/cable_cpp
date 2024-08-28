@@ -1,8 +1,6 @@
 #include "alg_cable_tem_detector_interface.h"
 #include "alg_cable_tem_detector.h"
 
-AlarmInfo alarm_info[ALARM_INFO_MAX_NUM];
-
 static CableTemDet cable_tem_detector0;
 static CableTemDet cable_tem_detector1;
 static CableTemDet cable_tem_detector2;
@@ -24,7 +22,7 @@ int alg_cable_temperature_detector_init(int _control)
     return 0;
 }
 
-static int getAlarmInfo(CableTemDet &det)
+static int getAlarmInfo(CableTemDet &det, AlarmInfo *alarm_info)
 {
     int count = 0;
     for (int i = 0; i < MAX_LENGTH; i++)
@@ -63,22 +61,22 @@ int alg_cable_temperature_detector_run(int8_t *_data, int _idx, int _cable_idx, 
     if (_cable_idx == 0)
     {
         res = cable_tem_detector0.run(data, idx, _cable_idx, _timestamp);
-        if (res > 0) res = getAlarmInfo(cable_tem_detector0);
+        if (res > 0) res = getAlarmInfo(cable_tem_detector0, alarm_info);
     }
     else if (_cable_idx == 1)
     {
         res = cable_tem_detector1.run(data, idx, _cable_idx, _timestamp);
-        if (res > 0) res = getAlarmInfo(cable_tem_detector1);
+        if (res > 0) res = getAlarmInfo(cable_tem_detector1, alarm_info);
     }
     else if (_cable_idx == 2)
     {
         res = cable_tem_detector2.run(data, idx, _cable_idx, _timestamp);
-        if (res > 0) res = getAlarmInfo(cable_tem_detector2);
+        if (res > 0) res = getAlarmInfo(cable_tem_detector2, alarm_info);
     }
     else if (_cable_idx == 3)
     {
         res = cable_tem_detector3.run(data, idx, _cable_idx, _timestamp);
-        if (res > 0) res = getAlarmInfo(cable_tem_detector3);
+        if (res > 0) res = getAlarmInfo(cable_tem_detector3, alarm_info);
     }
     else
     {

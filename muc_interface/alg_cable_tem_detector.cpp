@@ -356,8 +356,8 @@ int CableTemDet::alarmTemperatureRise(float _temperature_rise_thre)
             m_alarm_val[m_analyse_window[i].archs[m_analyse_window[i].arch_count - 1].peak] = m_analyse_window[i].archs[m_analyse_window[i].arch_count - 1].peak_val;
         }
         // notice: LOG不要太复杂，否则可能栈爆掉
-        LOGD("[DEBUG][%d] rise: track_id: %d, archs num: %d, alarm: %d, rise_rate: %.2f\r\n",m_idx, m_analyse_window[i].arch_id, m_analyse_window[i].arch_count, alarm,  (temp_diff / time_diff) * 60);
-        //LOGD("[DEBUG][%d] alarm temp rise: track_id: %d, archs num: %d, alarm: %d, temp_diff：%.1f, time_diff: %.1f, rise_rate: %.2f, val1:%.2f, val2:%.2f, peakid: %d \n", m_idx, m_analyse_window[i].arch_id, m_analyse_window[i].arch_count, alarm, temp_diff, time_diff, (temp_diff / time_diff) * 60, last_arch_val_max, start_arch_val_max, m_analyse_window[i].archs[m_analyse_window[i].arch_count - 1].peak);
+        LOGD("[DEBUG][%d] rise: track_id: %d, archs num: %d, alarm: %d, rise_rate: %.2f, peakid: %d\r\n",m_idx, m_analyse_window[i].arch_id, m_analyse_window[i].arch_count, alarm,  (temp_diff / time_diff) * 60, m_analyse_window[i].archs[m_analyse_window[i].arch_count - 1].peak);
+        //LOGD("[DEBUG][%d] alarm temp rise: track_id: %d, archs num: %d, alarm: %d, temp_diff：%.1f, time_diff: %.1f, rise_rate: %.2f, val1:%.2f, val2:%.2f, peakid: %d \r\n", m_idx, m_analyse_window[i].arch_id, m_analyse_window[i].arch_count, alarm, temp_diff, time_diff, (temp_diff / time_diff) * 60, last_arch_val_max, start_arch_val_max, m_analyse_window[i].archs[m_analyse_window[i].arch_count - 1].peak);
     }
     return alarm;
 }

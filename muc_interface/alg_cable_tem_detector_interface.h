@@ -19,11 +19,11 @@ extern "C"
 
 #define ALARM_INFO_MAX_NUM 16
 typedef struct {
-    int alarm_type;
-    int alarm_temp;
-    int addr;
+    uint8_t alarm_type;
+    int8_t alarm_temp;
+    uint16_t addr;
 } AlarmInfo;
-extern AlarmInfo alarm_info[ALARM_INFO_MAX_NUM];
+
 
 /**
  * @description:
