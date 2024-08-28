@@ -73,6 +73,8 @@ def keras_builder(onnx_model, native_groupconv:bool=False):
         tf_operator = OPERATOR.get(op_name)
         if tf_operator is None:
             raise KeyError(f"{op_name} not implemented yet")
+            # print(f"WARNING!!!     {op_name} not implemented yet")
+            # break
         
         _inputs = None 
         if len(node_inputs) > 0:
@@ -84,6 +86,18 @@ def keras_builder(onnx_model, native_groupconv:bool=False):
     '''
         build keras model
     '''
+    # outputs_nodes = []
+    # for i in range(len(model_graph.output)):
+    #     x = model_graph.output[i]
+    #     if x.name not in tf_tensor.keys():
+    #         continue
+    #     outputs_nodes.append(tf_tensor[x.name])
+    # input_nodes = []
+    # for i in range(len(model_graph.input)):
+    #     x = model_graph.input[i]
+    #     if x.name not in tf_tensor.keys():
+    #         continue
+    #     input_nodes.append(tf_tensor[x.name])
     input_nodes = [tf_tensor[x.name] for x in model_graph.input]
     outputs_nodes = [tf_tensor[x.name] for x in model_graph.output]
     keras_model = keras.Model(inputs=input_nodes, outputs=outputs_nodes)
