@@ -27,9 +27,10 @@ class AiShapeModel
 public:
     AiShapeModel(){};
     ~AiShapeModel(){};
-    int init(void);
+    int init();
     int run(float *_data, float *_output_data);
 private:
+    bool init_flag = false;
     TfLiteInterpreter* m_interpreter;
     TfLiteTensor* m_input_tensor;
     const TfLiteTensor* m_output_tensor;

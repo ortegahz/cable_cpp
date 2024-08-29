@@ -30,5 +30,6 @@ set(EXCUtTE_NAME mcu)
 add_executable(${EXCUtTE_NAME}
         main_mcu.cpp
         alg_cable_tem_detector_interface.cpp
-        alg_cable_tem_detector.cpp)
+        alg_cable_tem_detector.cpp
+        ai_shape_inference_pc.cpp)
 target_link_libraries(${EXCUtTE_NAME} ${TFLITE_LIBRARY_DIR}/lib/tensorflowlite_c.dll)

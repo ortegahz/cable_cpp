@@ -4,7 +4,7 @@
 #include <vector>
 #include <string>
 #include <algorithm>
-#include "ai_shape_inferance.h"
+#include "ai_shape_inference.h"
 
 
 using namespace std;

@@ -17,6 +17,7 @@
 #if defined(__arm__)
 #include <rtthread.h>
 #endif
+#include "ai_shape_inference.h"
 
 #define CABLE_TEMP_DEBUG 1
 #if CABLE_TEMP_DEBUG
@@ -43,8 +44,8 @@
 #define TIME_INIT_CNT_TH 16
 #define TIME_RUN_CNT_TH 64
 #define BEAR_TIME_THRESHOLD 10
-#define ACC_TIME_THRESHOLD 32
-#define SAVE_ARCHS_MAX_NUM_PER_PEAK 63
+#define ACC_TIME_THRESHOLD 16
+#define SAVE_ARCHS_MAX_NUM_PER_PEAK 32
 
 #define FIND_PEAK_WINDOW_SIZE 16
 // SAVE_ACTULLY_BUFFER_SIZE = FIND_PEAK_WINDOW_SIZE * 2
@@ -56,6 +57,9 @@
 #define ALARM_ARCH_TREND_TH  4
 #define ALARM_ARCH_RATIO_TH  0.8
 #define ALARM_TEMPERATURE_RISE_THRESHLOD 8.0
+
+#define SHAPE_MODEL_PROBABILITY_BUFFER_SIZE 5
+#define SHAPE_MODEL_AVERAGE_PROB_TH 0.7
 
 typedef struct PeakInfo{
     int index;
@@ -72,6 +76,7 @@ typedef struct ArchInfo
     int timestamp;
     // 储存实际采集到的温度
     signed char temp[SAVE_ACTULLY_BUFFER_SIZE] = {0};
+    float temp_sub[SAVE_ACTULLY_BUFFER_SIZE] = {0};
 } ArchInfo;
 
 typedef struct ArchInfoArr
@@ -79,6 +84,7 @@ typedef struct ArchInfoArr
     int arch_id;
     ArchInfo archs[SAVE_ARCHS_MAX_NUM_PER_PEAK + 1];
     int arch_count;
+    float shape_prob_buffer[SHAPE_MODEL_PROBABILITY_BUFFER_SIZE] = {0.0f};
 } ArchInfoArr;
 
 // cable temperature detector
@@ -119,6 +125,8 @@ private:
     int detactArch(int *_cur_data, int _idx, float *_subbg, int _MAX_LENGTH, int _peak_win);
     int deleteOldArchData(int _cur_time);
 
+    AiShapeModel *m_shape_model;
+    int alarmShapeModel(int _track_id);
     int alarmShape(int _arch_trend_th, float _reliable_arch_ratio_th);
     int alarmTemperatureRise(float _temperature_rise_thre);
 };

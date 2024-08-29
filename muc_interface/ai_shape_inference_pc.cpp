@@ -1,4 +1,5 @@
-#include "ai_shape_inferance.h"
+#include <math.h>
+#include "ai_shape_inference.h"
 
 
 // Helper function to read a binary file into a buffer
@@ -26,8 +27,14 @@ unsigned char* read_file(const char* filename, size_t* out_size) {
     return buffer;
 }
 
-int AiShapeModel::init(void)
+int AiShapeModel::init()
 {
+    if (init_flag)
+    {
+        printf("AiShapeModel::init already\r\n");
+        return 1;
+    }
+
     const char* model_path = "D:/data/02_CableTemperatureDetector/fromTang_20240827/best_model_noview_20240828.tflite";
     size_t model_size;
     unsigned char* model_data = read_file(model_path, &model_size);
@@ -73,10 +80,35 @@ int AiShapeModel::init(void)
     // Get output tensor
     m_output_tensor = TfLiteInterpreterGetOutputTensor(m_interpreter, 0);
 
-    free(model_data);
+    // 不要free！！！
+    // free(model_data);
+
+    init_flag = true;
+
     return 0;
 }
 
+void softmax(const float* input, float* output, int length) {
+    // 计算输入向量的最大值，用于数值稳定性
+    float max_input = input[0];
+    for (int i = 1; i < length; ++i) {
+        if (input[i] > max_input) {
+            max_input = input[i];
+        }
+    }
+
+    // 计算所有输入的指数并累加
+    float sum_exp = 0.0f;
+    for (int i = 0; i < length; ++i) {
+        output[i] = expf(input[i] - max_input);  // 减去最大值以提高数值稳定性
+        sum_exp += output[i];
+    }
+
+    // 归一化输出
+    for (int i = 0; i < length; ++i) {
+        output[i] /= sum_exp;
+    }
+}
 
 int AiShapeModel::run(float *_data, float *_output_data)
 {
@@ -95,13 +127,15 @@ int AiShapeModel::run(float *_data, float *_output_data)
     }
 
     // Get output data from output tensor
-    if (TfLiteTensorCopyToBuffer(m_output_tensor, _output_data, SHAPE_MODEL_OUTPUT_SIZE_BYTES) != kTfLiteOk) {
+    float tmp_output_data[SHAPE_MODEL_CLASS_NUM] = {0.0f};
+    if (TfLiteTensorCopyToBuffer(m_output_tensor, tmp_output_data, SHAPE_MODEL_OUTPUT_SIZE_BYTES) != kTfLiteOk) {
         fprintf(stderr, "Failed to copy data from output tensor\n");
         TfLiteInterpreterDelete(m_interpreter);
         return -1;
     }
 
     int res;
+    softmax(tmp_output_data, _output_data, SHAPE_MODEL_CLASS_NUM);
     if (_output_data[0] > _output_data[1])
     {
         res = 0;

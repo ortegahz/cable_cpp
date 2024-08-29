@@ -5,6 +5,10 @@
 
 using namespace std;
 
+// 全局的ShapeModel变量，因为有4条线缆要处理，但是AI模型比较占资源，所以只定义一个供4条线缆使用。
+static AiShapeModel g_shape_model;
+static float g_shape_model_input_data[SHAPE_MODEL_INPUT_SIZE] = {0.0f};
+
 CableTemDet::CableTemDet() {
 
 }
@@ -20,6 +24,12 @@ int CableTemDet::init(int _control)
     alarm_temdiff_switch_flag = alarm_switch_flag & 0b010;
     alarm_shape_switch_flag = alarm_switch_flag & 0b100;
     m_init_flag = true;
+
+    // init shape ai model
+    m_shape_model = &g_shape_model;
+    m_shape_model->init();
+    // g_shape_model.init();
+
     return 0;
 }
 
@@ -241,6 +251,7 @@ int CableTemDet::detactArch(int *_cur_data, int _idx, float *_subbg, int _MAX_LE
         for (int j = win_start; j < win_end; j++)
         {
             cur_arch.temp[j - win_start] = m_current_temperatures[j];
+            cur_arch.temp_sub[j - win_start] = _subbg[j];
         }
 
         int track_id = trackArch(cur_arch, _peak_win);
@@ -289,6 +300,43 @@ int CableTemDet::deleteOldArchData(int _cur_time)
     return 0;
 }
 
+int CableTemDet::alarmShapeModel(int _track_id)
+{
+    int res = 0;
+    int last_idx = m_analyse_window[_track_id].arch_count - 1;
+    for (int i = 0; i < SHAPE_MODEL_INPUT_HEIGHT; i++)
+    {
+        for (int j = 0; j < SHAPE_MODEL_INPUT_WIDTH; j++)
+        {
+            g_shape_model_input_data[i*SHAPE_MODEL_INPUT_WIDTH + j] = m_analyse_window[_track_id].archs[last_idx - i].temp_sub[j];
+            //printf("%.2f,", g_shape_model_input_data[i*SHAPE_MODEL_INPUT_WIDTH + j]);
+        }
+        //printf("\r\n");
+    }
+
+    float output_data[2];
+    res = m_shape_model->run(g_shape_model_input_data, output_data);
+    for(int i = 0; i < SHAPE_MODEL_PROBABILITY_BUFFER_SIZE - 1; i++) m_analyse_window[_track_id].shape_prob_buffer[i] = m_analyse_window[_track_id].shape_prob_buffer[i+1];
+    if (res == 1)
+    {
+        m_analyse_window[_track_id].shape_prob_buffer[SHAPE_MODEL_PROBABILITY_BUFFER_SIZE - 1] = output_data[1];
+    }
+    else
+    {
+        m_analyse_window[_track_id].shape_prob_buffer[SHAPE_MODEL_PROBABILITY_BUFFER_SIZE - 1] = 0;
+    }
+    float avg_prob = 0;
+    for(int i = 0; i < SHAPE_MODEL_PROBABILITY_BUFFER_SIZE; i++) avg_prob += m_analyse_window[_track_id].shape_prob_buffer[i];
+    avg_prob = avg_prob / SHAPE_MODEL_PROBABILITY_BUFFER_SIZE;
+    int alarm = 0;
+    if (avg_prob > SHAPE_MODEL_AVERAGE_PROB_TH)
+    {
+        alarm = 1;
+    }
+    LOGD("[DEBUG] MODEL pred:%d, [%d]: %.2f, [%d]: %.2f, alarm:%d, avg:%.2f \r\n", res, 0, output_data[0], 1, output_data[1], alarm, avg_prob);
+    return alarm;
+}
+
 int CableTemDet::alarmShape(int _arch_trend_th=4, float _reliable_arch_ratio_th=0.8)
 {
     int res = 0;
@@ -310,12 +358,17 @@ int CableTemDet::alarmShape(int _arch_trend_th=4, float _reliable_arch_ratio_th=
         int alarm = 0;
         if (float(reliable_arch_count) / used_arch_num > _reliable_arch_ratio_th)
         {
-            alarm = 1;
-            res = 10;
-            m_alarm_status[m_analyse_window[i].archs[m_analyse_window[i].arch_count - 1].peak] = 3;
-            m_alarm_val[m_analyse_window[i].archs[m_analyse_window[i].arch_count - 1].peak] = m_analyse_window[i].archs[m_analyse_window[i].arch_count - 1].peak_val;
+            // TODO 形状AI模型进一步判断
+            int alarm_model = alarmShapeModel(i);
+            if (alarm_model)
+            {
+                alarm = 1;
+                res = 10;
+                m_alarm_status[m_analyse_window[i].archs[m_analyse_window[i].arch_count - 1].peak] = 3;
+                m_alarm_val[m_analyse_window[i].archs[m_analyse_window[i].arch_count - 1].peak] = m_analyse_window[i].archs[m_analyse_window[i].arch_count - 1].peak_val;
+            }
         }
-        LOGD("[DEBUG] track_id: %d alarm: %d, cnt:%d\r\n", m_analyse_window[i].arch_id, alarm, reliable_arch_count);
+        LOGD("[DEBUG][%d] shape track_id: %d alarm: %d, cnt:%d\r\n", m_idx, m_analyse_window[i].arch_id, alarm, reliable_arch_count);
         //LOGD("[DEBUG][%d] alarm shape: track_id: %d, alarm: %d, reliable_arch_count：%d, ratio: %.2f, peakid: %d \r\n", m_idx, m_analyse_window[i].arch_id, alarm, reliable_arch_count, float(reliable_arch_count) / used_arch_num, m_analyse_window[i].archs[m_analyse_window[i].arch_count - 1].peak);
     }
     return res;
@@ -361,6 +414,7 @@ int CableTemDet::alarmTemperatureRise(float _temperature_rise_thre)
     }
     return alarm;
 }
+
 
 int CableTemDet::run(int *_data, int _idx, int _cable_idx, uint32_t _timestamp)
 {
