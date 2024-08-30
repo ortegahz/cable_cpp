@@ -76,7 +76,7 @@ typedef struct ArchInfo
     int timestamp;
     // 储存实际采集到的温度
     signed char temp[SAVE_ACTULLY_BUFFER_SIZE] = {0};
-    float temp_sub[SAVE_ACTULLY_BUFFER_SIZE] = {0};
+    signed char temp_sub[SAVE_ACTULLY_BUFFER_SIZE] = {0};
 } ArchInfo;
 
 typedef struct ArchInfoArr

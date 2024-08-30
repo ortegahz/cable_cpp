@@ -277,12 +277,12 @@ if __name__ == '__main__':
     # parser.add_argument('--model_path', type=str, default='results/mobilenetv2_100_float.tflite')
     # parser.add_argument('--model_path', type=str, default='results/simple-model/tfl20240807.tflite')
     parser.add_argument('--model_path', type=str, default='D:/data/02_CableTemperatureDetector/fromTang_20240827/best_model_noview_20240828.tflite')
-    parser.add_argument('--model_name', type=str, default='network_1')
+    parser.add_argument('--model_name', type=str, default='shapemodel')
     # parser.add_argument('--convert_type', type=int, default=1,
     #                     help='only 1,for tflite')
     # parser.add_argument('--tflite_val_path', type=str, default='../../../datasets/food-101/validation',
     #                     help='The path where the image which quantity need is saved')
-    parser.add_argument('--c_project_path', type=str, default="results/t4",
+    parser.add_argument('--c_project_path', type=str, default="results/t5",
                         help='The path of c project,None= results/deploy/xxxx_00xx')
     parser.add_argument('--stm32cubeai_path', type=str,
                         default="C:/Program1/xcubeai/stedgeai-windows-9.0.0",

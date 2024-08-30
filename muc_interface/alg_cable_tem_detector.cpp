@@ -415,7 +415,6 @@ int CableTemDet::alarmTemperatureRise(float _temperature_rise_thre)
     return alarm;
 }
 
-
 int CableTemDet::run(int *_data, int _idx, int _cable_idx, uint32_t _timestamp)
 {
     // LOGD("entry cable temperature detector algorithm idx:%d, cable_idx:%d \r\n", _idx, _cable_idx);
