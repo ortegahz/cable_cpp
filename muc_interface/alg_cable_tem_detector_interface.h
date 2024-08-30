@@ -45,9 +45,10 @@ int alg_cable_temperature_detector_init(int _control);
  *    int _cable_idx: 那一条线缆
  *    uint32_t timestamp:  时间戳
  *    AlarmInfo *alarm_info 报警信息
+ *    int8_t _use_ai_model: 是否启用AI卷积模型做形状判断，1使能；0失能
  * @return {0: normal, <0: error/没初始化完，>0: 报警点的数量, 依据数量从}
  */
-int alg_cable_temperature_detector_run(int8_t *_data, int _idx, int _cable_idx, uint32_t _timestamp, AlarmInfo *alarm_info);
+int alg_cable_temperature_detector_run(int8_t *_data, int _idx, int _cable_idx, uint32_t _timestamp, AlarmInfo *alarm_info, int8_t _use_ai_model);
 
 #ifdef __cplusplus
 }

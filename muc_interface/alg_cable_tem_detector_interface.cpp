@@ -39,7 +39,7 @@ static int getAlarmInfo(CableTemDet &det, AlarmInfo *alarm_info)
     return count;
 }
 
-int alg_cable_temperature_detector_run(int8_t *_data, int _idx, int _cable_idx, uint32_t _timestamp, AlarmInfo *alarm_info)
+int alg_cable_temperature_detector_run(int8_t *_data, int _idx, int _cable_idx, uint32_t _timestamp, AlarmInfo *alarm_info, int8_t _use_ai_model)
 {
     //LOGD("CableTemDetTest run idx:%d, cable_idx:%d \r\n", _idx, _cable_idx);
     int data[ONE_GROUP_DATA_LENGTH];
@@ -60,22 +60,22 @@ int alg_cable_temperature_detector_run(int8_t *_data, int _idx, int _cable_idx, 
 
     if (_cable_idx == 0)
     {
-        res = cable_tem_detector0.run(data, idx, _cable_idx, _timestamp);
+        res = cable_tem_detector0.run(data, idx, _cable_idx, _timestamp, _use_ai_model);
         if (res > 0) res = getAlarmInfo(cable_tem_detector0, alarm_info);
     }
     else if (_cable_idx == 1)
     {
-        res = cable_tem_detector1.run(data, idx, _cable_idx, _timestamp);
+        res = cable_tem_detector1.run(data, idx, _cable_idx, _timestamp, _use_ai_model);
         if (res > 0) res = getAlarmInfo(cable_tem_detector1, alarm_info);
     }
     else if (_cable_idx == 2)
     {
-        res = cable_tem_detector2.run(data, idx, _cable_idx, _timestamp);
+        res = cable_tem_detector2.run(data, idx, _cable_idx, _timestamp, _use_ai_model);
         if (res > 0) res = getAlarmInfo(cable_tem_detector2, alarm_info);
     }
     else if (_cable_idx == 3)
     {
-        res = cable_tem_detector3.run(data, idx, _cable_idx, _timestamp);
+        res = cable_tem_detector3.run(data, idx, _cable_idx, _timestamp, _use_ai_model);
         if (res > 0) res = getAlarmInfo(cable_tem_detector3, alarm_info);
     }
     else

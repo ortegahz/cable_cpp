@@ -358,8 +358,11 @@ int CableTemDet::alarmShape(int _arch_trend_th=4, float _reliable_arch_ratio_th=
         int alarm = 0;
         if (float(reliable_arch_count) / used_arch_num > _reliable_arch_ratio_th)
         {
-            // TODO 形状AI模型进一步判断
-            int alarm_model = alarmShapeModel(i);
+            int alarm_model = 1;
+            if (m_use_ai_model)
+            {
+                alarm_model = alarmShapeModel(i);
+            }
             if (alarm_model)
             {
                 alarm = 1;
@@ -415,13 +418,15 @@ int CableTemDet::alarmTemperatureRise(float _temperature_rise_thre)
     return alarm;
 }
 
-int CableTemDet::run(int *_data, int _idx, int _cable_idx, uint32_t _timestamp)
+int CableTemDet::run(int *_data, int _idx, int _cable_idx, uint32_t _timestamp, int8_t _use_ai_model)
 {
     // LOGD("entry cable temperature detector algorithm idx:%d, cable_idx:%d \r\n", _idx, _cable_idx);
     if (!m_init_flag)
     {
         return -1;
     }
+
+    m_use_ai_model = _use_ai_model;
 
     m_idx = _idx;
     m_timestamp = _timestamp;

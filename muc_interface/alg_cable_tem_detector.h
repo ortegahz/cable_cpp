@@ -94,7 +94,7 @@ public:
     CableTemDet();
     ~CableTemDet();
     int init(int _control);
-    int run(int *_data, int _idx, int _cable_idx, uint32_t _timestamp);
+    int run(int *_data, int _idx, int _cable_idx, uint32_t _timestamp, int8_t _use_ai_model);
     int8_t m_alarm_status[MAX_LENGTH];
     int8_t m_alarm_val[MAX_LENGTH];
 
@@ -125,6 +125,7 @@ private:
     int detactArch(int *_cur_data, int _idx, float *_subbg, int _MAX_LENGTH, int _peak_win);
     int deleteOldArchData(int _cur_time);
 
+    int8_t m_use_ai_model = 1;
     AiShapeModel *m_shape_model;
     int alarmShapeModel(int _track_id);
     int alarmShape(int _arch_trend_th, float _reliable_arch_ratio_th);

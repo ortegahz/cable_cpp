@@ -98,10 +98,11 @@ int main(int argc, char *argv[])
             int a = 0;
             data[32] = 103;
         }
+        int8_t use_ai_model = 1;
         // if (idx == 0)
         {
             // printf("process :%d, group:%s \n", i, group_id_tmp.c_str());
-            res = alg_cable_temperature_detector_run(data, idx*64, cable_idx, i, alarmList);
+            res = alg_cable_temperature_detector_run(data, idx*64, cable_idx, i, alarmList, use_ai_model);
             //printf("********* [[%d]], %s %s, group:%s, res: %d *********\n", i, one_line_data[0].c_str(), one_line_data[1].c_str(), group_id_tmp.c_str(), res);
             if (res > 0)
             {
