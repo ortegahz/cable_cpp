@@ -10,7 +10,7 @@ add_executable(pc
     alg_cable_tem_detector.cpp)
 
 # find tflite
-set(TFLITE_LIBRARY_DIR "D:/tool-win/tflite-2.3.1-lib")
+set(TFLITE_LIBRARY_DIR "${CMAKE_SOURCE_DIR}/tflite-2.3.1-lib")
 include_directories("${TFLITE_LIBRARY_DIR}/include")
 add_library( tflite  SHARED IMPORTED )
 set_target_properties(
