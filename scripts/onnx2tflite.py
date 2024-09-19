@@ -91,16 +91,17 @@ def onnx2tflite_converter(
     print('over')
 
 def onnx2tflite_converter_test():
-    onnx_model_path = r'D:\data\02_CableTemperatureDetector\fromTang_20240827\best_model_noview_20240828.onnx'
-    output_path = 'results/mobilenetv2_100.tflite'
+    # onnx_model_path = r'D:\data\02_CableTemperatureDetector\fromTang_20240827\best_model_noview_20240828.onnx'
+    # output_path = 'results/mobilenetv2_100.tflite'
+    onnx_model_path = 'results/channel4/VGGC4.onnx'
 
     # weight_quant int8_model 为True时进行量化操作
     onnx2tflite_converter(
         onnx_model_path,
         output_path=None,
         target_formats=['tflite'],
-        weight_quant=False,
-        int8_model=False,
+        weight_quant=True,
+        int8_model=True,
         int8_mean=None,
         int8_std=None,
     )
