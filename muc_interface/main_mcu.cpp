@@ -67,8 +67,11 @@ int main(int argc, char *argv[])
     file.close();
 
     // string csv_data_path = "D:/data/temperature_sensing_cable_V0/data/cable/data_v2/隧道火灾实验数据/１、紧急停车带火灾实验/6.22紧急停车带隧道火灾实验数据/6.22实验 1L汽油 紧急停车带 风速0.3－43S报警/20240622 保护套线原始数据.CSV";
-    // string csv_data_path = "D:/data/02_CableTemperatureDetector/temperature_sensing_cable_V0/data/cable/data_v2/隧道火灾实验数据/２、隧道中间火灾实验/6.23隧道中间 3L汽油 大火盆 电缆报警 光纤未报/1：41s后点火 31s报警 中间位置 20240623.CSV";
-    string csv_data_path = "../data/test.CSV";
+    string csv_data_path = "D:/data/02_CableTemperatureDetector/temperature_sensing_cable_V0/data/cable/data_v2/隧道火灾实验数据/２、隧道中间火灾实验/6.23隧道中间 3L汽油 大火盆 电缆报警 光纤未报/1：41s后点火 31s报警 中间位置 20240623.CSV";
+    // string csv_data_path = "../data/test.CSV";
+    // string csv_data_path = "D:/data/02_CableTemperatureDetector/log/heta-cable.2024-09-18.0.log15495187616985280.csv";
+    // string csv_data_path = "D:/data/02_CableTemperatureDetector/log/heta-cable.2024-09-17.0.log15408741163688121.csv";
+    // string csv_data_path = "D:/data/02_CableTemperatureDetector/log/heta-cable.2024-09-16.0.log15322323894386850.csv";
     std::vector<std::vector<std::string>> data_raw = readCSV(csv_data_path);
 
     int res = 0;
@@ -82,8 +85,14 @@ int main(int argc, char *argv[])
         group_id_tmp.erase(std::remove_if(group_id_tmp.begin(), group_id_tmp.end(), ::isspace), group_id_tmp.end());
         int a = group_id_tmp.size();
         std::string group_id2 = group_id_tmp.substr(1, group_id_tmp.size()-2);
+        if (i > 116)
+        {
+            int a = 0;
+            // data[46] = 95;
+        }
         idx = stoi(group_id2);
         std::string target = "ALARM: ";
+
         for (int j = 0;j < RAW_DATA_ONE_GROUP_LENGTH; j++)
         {
             size_t pos = one_line_data[6+j].find(target);
@@ -93,11 +102,7 @@ int main(int argc, char *argv[])
             }
             data[j] = stoi(one_line_data[6+j]);
         }
-        if (i == 80)
-        {
-            int a = 0;
-            data[32] = 103;
-        }
+
         int8_t use_ai_model = 1;
         // if (idx == 0)
         {
@@ -108,12 +113,13 @@ int main(int argc, char *argv[])
             {
                 for (int j = 0; j < res; j++)
                 {
-                    // printf("********* [[%d]], group:%s, res: %d, %d, %d *********\n", i, group_id_tmp.c_str(), alarmList[j].alarm_type, alarmList[j].alarm_temp, alarmList[j].addr);
+                    printf("********* [[%d]], group:%s, res: %d, alarm_type:%d, alarm_temp: %d, addr:%d *********\n", i, group_id_tmp.c_str(), res, alarmList[j].alarm_type, alarmList[j].alarm_temp, alarmList[j].addr, 0);
                 }
             }
             printf("process :%d, res:%d \n", i, res);
         }
         // if (i > 256) break;
+        if (res > 0) break;
     }
     printf("program over");
     return 0;

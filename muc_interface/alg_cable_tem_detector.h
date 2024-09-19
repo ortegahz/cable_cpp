@@ -99,6 +99,7 @@ public:
     int8_t m_alarm_val[MAX_LENGTH];
 
 private:
+    bool m_alarm_suppression = false;
     int m_idx;
     bool m_init_flag = false;
     bool alarm_gb_switch_flag = true;
@@ -106,8 +107,8 @@ private:
     bool alarm_shape_switch_flag = true;
     bool background_temperatures_confirm_flag = false;
     int background_temperatures_confirm_matrix = 0;
-    float m_background_temperatures[MAX_LENGTH] = {0};
-    float m_current_temperatures[MAX_LENGTH] = {0};
+    float m_background_temperatures[MAX_LENGTH] = {};
+    int m_current_temperatures[MAX_LENGTH] = {0};
     float m_sbtract_background[MAX_LENGTH] = {0};
     int updateBackgroundTemperature(int *_data, int _idx);
     int calSbtractBackground(float *_sbbg, int *_data, int _idx);

@@ -30,6 +30,8 @@ int CableTemDet::init(int _control)
     m_shape_model->init();
     // g_shape_model.init();
 
+    for (int i = 0; i < MAX_LENGTH; i++) m_background_temperatures[i] = -100;
+
     return 0;
 }
 
@@ -49,6 +51,40 @@ static int alarmGB(int *_data, int8_t *_alarm_status, int8_t *_alarm_val, int _i
     return res;
 }
 
+static int judgeAnormalPoint(int _val)
+{
+    int res = 0;
+    if (_val < -90)
+    {
+        res = -1;
+    }
+    return res;
+}
+
+void processAbnormalData(int *_data)
+{
+    for (int i = 1; i < ONE_GROUP_DATA_LENGTH - 1; i++)
+    {
+        if (_data[i] == 43 && (judgeAnormalPoint(_data[i-1]) < 0 || judgeAnormalPoint(_data[i+1]) < 0))
+        {
+            _data[i] = -95;
+        }
+    }
+}
+
+static void unanormalPointSuppression(int *_data, int8_t *_alarm_status, int8_t *_alarm_val, int _idx, bool _alarm_suppression)
+{
+    for (int i = 0; i < MAX_LENGTH; i++)
+    {
+        if (judgeAnormalPoint(_data[i]) < 0 && _alarm_status[i] != 0)
+        {
+            _alarm_status[i] = 0;
+            // LOGD("unanormalPointSuppression val:%d, peak:%d\r\n", _data[i], i);
+        }
+        if (_alarm_suppression) _alarm_status[i] = 0;
+    }
+}
+
 int CableTemDet::updateBackgroundTemperature(int *_data, int _idx)
 {
     for (int i = 0; i < ONE_GROUP_DATA_LENGTH; i++)
@@ -65,7 +101,10 @@ int CableTemDet::updateBackgroundTemperature(int *_data, int _idx)
     {
         for (int i = 0; i < ONE_GROUP_DATA_LENGTH; i++)
         {
-            m_background_temperatures[_idx*ONE_GROUP_DATA_LENGTH + i] = _data[i];
+            if (judgeAnormalPoint(_data[i]) >= 0)
+            {
+                m_background_temperatures[_idx*ONE_GROUP_DATA_LENGTH + i] = _data[i];
+            }
         }
         background_temperatures_confirm_matrix = background_temperatures_confirm_matrix | 0b1 << _idx;
         return -1; // init background temperatures calculting
@@ -83,12 +122,22 @@ int CableTemDet::updateBackgroundTemperature(int *_data, int _idx)
         }
     }
 
-    float ALPHA = 0.0001;
+    float ALPHA = 0.0005;
     float ALPHA2 = 1 - ALPHA;
     for (int i = 0; i < ONE_GROUP_DATA_LENGTH; i++)
     {
-        m_background_temperatures[_idx*ONE_GROUP_DATA_LENGTH + i] = ALPHA * _data[i] +
+        if (judgeAnormalPoint(_data[i]) >= 0)
+        {
+            if (m_background_temperatures[_idx*ONE_GROUP_DATA_LENGTH + i] < -90)
+            {
+                m_background_temperatures[_idx*ONE_GROUP_DATA_LENGTH + i] = _data[i];
+            }
+            else
+            {
+                m_background_temperatures[_idx*ONE_GROUP_DATA_LENGTH + i] = ALPHA * _data[i] +
             ALPHA2 * m_background_temperatures[_idx*ONE_GROUP_DATA_LENGTH + i];
+            }
+        }
     }
 
     return 0;
@@ -98,9 +147,28 @@ int CableTemDet::calSbtractBackground(float *_sbbg, int *_data, int _idx)
 {
     for (int i = 0; i < ONE_GROUP_DATA_LENGTH; i++)
     {
-        if (_data[i] < -40) continue;
+        if (judgeAnormalPoint(_data[i])) continue;
+
         _sbbg[_idx*ONE_GROUP_DATA_LENGTH + i] = _data[i] - m_background_temperatures[_idx*ONE_GROUP_DATA_LENGTH + i];
     }
+    int cnt = 0;
+    for (int i = 0; i < ONE_GROUP_DATA_LENGTH; i++)
+    {
+        if (_sbbg[_idx*ONE_GROUP_DATA_LENGTH + i] > FIND_PEAK_TEMP_TH)
+        {
+            cnt += 1;
+        }
+    }
+    // LOGD("_sbbg cnt: %d \r\n", cnt);
+    if (cnt > ONE_GROUP_DATA_LENGTH / 3)
+    {
+        m_alarm_suppression = true;
+    }
+    // for (int i = 0; i < MAX_LENGTH; i++)
+    // {
+    //     if (judgeAnormalPoint(m_current_temperatures[i])) continue;
+    //     _sbbg[i] = m_current_temperatures[i] - m_background_temperatures[i];
+    // }
     return 0;
 }
 
@@ -120,12 +188,15 @@ int CableTemDet::findPeaks(float *_arr, int _win, float th)
     }
 
     // step1. find local max
-    if (_arr[0] > _arr[1]) peaks[0] = 1;
-    if (_arr[MAX_LENGTH - 1] > _arr[MAX_LENGTH - 2]) peaks[MAX_LENGTH - 1] = 1;
+    if (_arr[0] > _arr[1] && _arr[0] >= th && judgeAnormalPoint(m_current_temperatures[1]) >= 0) peaks[0] = 1;
+    if (_arr[MAX_LENGTH - 1] > _arr[MAX_LENGTH - 2] && _arr[MAX_LENGTH - 1] >= th && judgeAnormalPoint(m_current_temperatures[MAX_LENGTH - 2]) >= 0) peaks[MAX_LENGTH - 1] = 1;
     int step = 0;
+    // float th1 = 0.5;
     for (int i = 1; i < MAX_LENGTH - 1; i++)
     {
         if (_arr[i] < th) continue;
+        if (judgeAnormalPoint(m_current_temperatures[i-1]) < 0) continue;
+        if (judgeAnormalPoint(m_current_temperatures[i+1]) < 0) continue;
         if (_arr[i] > _arr[i-1] && _arr[i] > _arr[i+1]) peaks[i] = 1;
         // 如果是平台形状，取中点
         if (_arr[i] >= _arr[i-1] && _arr[i] == _arr[i+1])
@@ -163,7 +234,8 @@ int CableTemDet::findPeaks(float *_arr, int _win, float th)
     for (int i = 0; i < peaks_count; i++)
     {
         if (suppressed[i]) continue;
-        result_peak_info[result_peak_count++] = peaks_info[i];
+        result_peak_info[result_peak_count] = peaks_info[i];
+        result_peak_count++;
         for (int j = i + 1; j < peaks_count; j++)
         {
             if (abs(peaks_info[i].index - peaks_info[j].index) < _win)
@@ -263,9 +335,13 @@ int CableTemDet::detactArch(int *_cur_data, int _idx, float *_subbg, int _MAX_LE
             m_analyse_window[track_id].archs[m_analyse_window[track_id].arch_count++] = cur_arch;
             m_analyse_window_count++;
         }
-        else if (track_id >= 0)
+        else if (track_id >= 0 && track_id < ANALYSE_WINDOW_MAX)
         {
             m_analyse_window[track_id].archs[m_analyse_window[track_id].arch_count++] = cur_arch;
+        }
+        else
+        {
+            continue;
         }
 
         if (m_analyse_window[track_id].arch_count < 2) continue;
@@ -370,8 +446,8 @@ int CableTemDet::alarmShape(int _arch_trend_th=4, float _reliable_arch_ratio_th=
                 m_alarm_status[m_analyse_window[i].archs[m_analyse_window[i].arch_count - 1].peak] = 3;
                 m_alarm_val[m_analyse_window[i].archs[m_analyse_window[i].arch_count - 1].peak] = m_analyse_window[i].archs[m_analyse_window[i].arch_count - 1].peak_val;
             }
+            LOGD("[DEBUG][%d] shape track_id: %d alarm: %d, cnt:%d\r\n", m_idx, m_analyse_window[i].arch_id, alarm, reliable_arch_count);
         }
-        LOGD("[DEBUG][%d] shape track_id: %d alarm: %d, cnt:%d\r\n", m_idx, m_analyse_window[i].arch_id, alarm, reliable_arch_count);
         //LOGD("[DEBUG][%d] alarm shape: track_id: %d, alarm: %d, reliable_arch_count：%d, ratio: %.2f, peakid: %d \r\n", m_idx, m_analyse_window[i].arch_id, alarm, reliable_arch_count, float(reliable_arch_count) / used_arch_num, m_analyse_window[i].archs[m_analyse_window[i].arch_count - 1].peak);
     }
     return res;
@@ -387,13 +463,14 @@ int CableTemDet::alarmTemperatureRise(float _temperature_rise_thre)
         int start_id = 9999;
         for (int j = m_analyse_window[i].arch_count - 2; j >= 0; j--)
         {
-            if (m_analyse_window[i].archs[last_idx].timestamp - m_analyse_window[i].archs[j].timestamp > ACC_TIME_THRESHOLD)
+            if (m_analyse_window[i].archs[last_idx].timestamp - m_analyse_window[i].archs[j].timestamp >= ACC_TIME_THRESHOLD && (last_idx - start_id >= ACC_TIME_THRESHOLD))
             {
                 break;
             }
             start_id = j;
         }
         if (start_id == 9999) continue;
+        if (last_idx - start_id < ACC_TIME_THRESHOLD / 2) continue;
 
         float start_arch_val_max = -999.0;
         float last_arch_val_max = -999.0;
@@ -410,9 +487,9 @@ int CableTemDet::alarmTemperatureRise(float _temperature_rise_thre)
             alarm = 1;
             m_alarm_status[m_analyse_window[i].archs[m_analyse_window[i].arch_count - 1].peak] = 1;
             m_alarm_val[m_analyse_window[i].archs[m_analyse_window[i].arch_count - 1].peak] = m_analyse_window[i].archs[m_analyse_window[i].arch_count - 1].peak_val;
+            // notice: LOG不要太复杂，否则可能栈爆掉
+            LOGD("[DEBUG][%d] rise: track_id: %d, archs num: %d, alarm: %d, rise_rate: %.2f, peakid: %d\r\n",m_idx, m_analyse_window[i].arch_id, m_analyse_window[i].arch_count, alarm,  (temp_diff / time_diff) * 60, m_analyse_window[i].archs[m_analyse_window[i].arch_count - 1].peak);
         }
-        // notice: LOG不要太复杂，否则可能栈爆掉
-        LOGD("[DEBUG][%d] rise: track_id: %d, archs num: %d, alarm: %d, rise_rate: %.2f, peakid: %d\r\n",m_idx, m_analyse_window[i].arch_id, m_analyse_window[i].arch_count, alarm,  (temp_diff / time_diff) * 60, m_analyse_window[i].archs[m_analyse_window[i].arch_count - 1].peak);
         //LOGD("[DEBUG][%d] alarm temp rise: track_id: %d, archs num: %d, alarm: %d, temp_diff：%.1f, time_diff: %.1f, rise_rate: %.2f, val1:%.2f, val2:%.2f, peakid: %d \r\n", m_idx, m_analyse_window[i].arch_id, m_analyse_window[i].arch_count, alarm, temp_diff, time_diff, (temp_diff / time_diff) * 60, last_arch_val_max, start_arch_val_max, m_analyse_window[i].archs[m_analyse_window[i].arch_count - 1].peak);
     }
     return alarm;
@@ -427,6 +504,7 @@ int CableTemDet::run(int *_data, int _idx, int _cable_idx, uint32_t _timestamp, 
     }
 
     m_use_ai_model = _use_ai_model;
+    m_alarm_suppression = false;
 
     m_idx = _idx;
     m_timestamp = _timestamp;
@@ -437,6 +515,8 @@ int CableTemDet::run(int *_data, int _idx, int _cable_idx, uint32_t _timestamp, 
     {
         return -2; // index out of max range
     }
+
+    processAbnormalData(_data);
 
     res = updateBackgroundTemperature(_data, _idx);
     if (res < 0)
@@ -470,6 +550,17 @@ int CableTemDet::run(int *_data, int _idx, int _cable_idx, uint32_t _timestamp, 
     }
     calSbtractBackground(m_sbtract_background, _data, _idx);
 
+    static int suppression_cnt = 0;
+    if (m_alarm_suppression)
+    {
+        suppression_cnt = 60;
+    }
+    else
+    {
+        if (suppression_cnt > 0) suppression_cnt--;
+    }
+    if (suppression_cnt > 0) return -88;
+
     // 寻找差值数据的波峰
     res = findPeaks(m_sbtract_background, FIND_PEAK_WINDOW_SIZE, FIND_PEAK_TEMP_TH);
     if (res > 0) LOGD("[DEBUG] peak_idx.size(): %d, peak:%d\r\n", result_peak_count, result_peak_info[0].index);
@@ -494,6 +585,15 @@ int CableTemDet::run(int *_data, int _idx, int _cable_idx, uint32_t _timestamp, 
         if (res > 0) alarm += 100;
     }
 
-    if (alarm > 0) return alarm;
-    else return res;
+    // 错误点抑制
+    unanormalPointSuppression(m_current_temperatures, m_alarm_status, m_alarm_val, _idx, m_alarm_suppression);
+
+    if (alarm > 0)
+    {
+        return alarm;
+    }
+    else
+    {
+        return res;
+    }
 }
