@@ -1,7 +1,7 @@
 #ifndef __AI_SHAPE_INFERENCE_H__
 #define __AI_SHAPE_INFERENCE_H__
 
-#if defined(_WIN32)
+#if defined(_WIN32) || defined(__linux__)
 #include <stdio.h>
 #include <stdlib.h>
 #include <tensorflow/lite/c/c_api.h>
@@ -32,7 +32,7 @@ public:
     int run(float *_data, float *_output_data);
 private:
     bool init_flag = false;
-#if defined(_WIN32)
+#if defined(_WIN32) || defined(__linux__)
     TfLiteInterpreter* m_interpreter;
     TfLiteTensor* m_input_tensor;
     const TfLiteTensor* m_output_tensor;

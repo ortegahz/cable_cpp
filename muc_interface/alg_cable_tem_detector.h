@@ -21,7 +21,7 @@
 
 #define CABLE_TEMP_DEBUG 1
 #if CABLE_TEMP_DEBUG
-#if defined(_WIN32)
+#if defined(_WIN32) || defined(__linux__)
 #define LOGI(fmt, ...) printf("wx_test: line %d, " fmt, __LINE__, ##__VA_ARGS__)
 #define LOGD(fmt, ...) printf("wx_test: line %d, " fmt, __LINE__, ##__VA_ARGS__)
 #elif defined(__arm__)
@@ -29,7 +29,7 @@
 #define LOGD(fmt, ...) rt_kprintf("line %d, " fmt, __LINE__,##__VA_ARGS__)
 #endif
 #else
-#if defined(_WIN32)
+#if defined(_WIN32) || defined(__linux__)
 #define LOGI(fmt, ...) printf(fmt,  ##__VA_ARGS__)
 #define LOGD(fmt, ...)
 #elif defined(__arm__)

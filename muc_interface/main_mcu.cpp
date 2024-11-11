@@ -67,7 +67,7 @@ int main(int argc, char *argv[])
     file.close();
 
     // string csv_data_path = "D:/data/temperature_sensing_cable_V0/data/cable/data_v2/隧道火灾实验数据/１、紧急停车带火灾实验/6.22紧急停车带隧道火灾实验数据/6.22实验 1L汽油 紧急停车带 风速0.3－43S报警/20240622 保护套线原始数据.CSV";
-    string csv_data_path = "D:/data/02_CableTemperatureDetector/temperature_sensing_cable_V0/data/cable/data_v2/隧道火灾实验数据/２、隧道中间火灾实验/6.23隧道中间 3L汽油 大火盆 电缆报警 光纤未报/1：41s后点火 31s报警 中间位置 20240623.CSV";
+    string csv_data_path = "/home/manu/tmp/cable_demo_parser_save/heta-cable_00000002333232373739393630353737_1_1_segment_0.csv";
     // string csv_data_path = "../data/test.CSV";
     // string csv_data_path = "D:/data/02_CableTemperatureDetector/log/heta-cable.2024-09-18.0.log15495187616985280.csv";
     // string csv_data_path = "D:/data/02_CableTemperatureDetector/log/heta-cable.2024-09-17.0.log15408741163688121.csv";

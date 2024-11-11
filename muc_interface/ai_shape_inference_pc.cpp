@@ -35,7 +35,7 @@ int AiShapeModel::init()
         return 1;
     }
 
-    const char* model_path = "D:/data/02_CableTemperatureDetector/fromTang_20240827/best_model_noview_20240828.tflite";
+    const char* model_path = "/media/manu/ST2000DM005-2U91/cable/models/best_model_noview_20240828.tflite";
     size_t model_size;
     unsigned char* model_data = read_file(model_path, &model_size);
     if (model_data == NULL) return -1;
