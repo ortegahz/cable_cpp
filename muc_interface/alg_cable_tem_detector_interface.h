@@ -19,7 +19,7 @@ extern "C"
 
 #define ALARM_INFO_MAX_NUM 16
 typedef struct {
-    uint8_t alarm_type;
+    uint8_t alarm_type; // 1：差温；2:定温；
     int8_t alarm_temp;
     uint16_t addr;
 } AlarmInfo;
