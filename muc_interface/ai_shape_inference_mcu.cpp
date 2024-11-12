@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
+#include <rtthread.h>
 #include "ai_shape_inference.h"
 
 
@@ -62,7 +63,7 @@ int AiShapeModel::run(float *_data, float *_output_data)
     if (batch != 1) {
         return -1;
     }
-    printf("Output pred: [%d]: %f, [%d]: %f\r\n", 0, m_output_data[0], 1, m_output_data[1]);
+    rt_kprintf("Output pred: [%d]: %f, [%d]: %f\r\n", 0, m_output_data[0], 1, m_output_data[1]);
 
     int res;
     softmax(m_output_data, _output_data, SHAPE_MODEL_CLASS_NUM);
