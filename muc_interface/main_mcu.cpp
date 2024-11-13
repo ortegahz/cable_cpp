@@ -90,8 +90,8 @@ int main(int argc, char *argv[]) {
         idx = stoi(group_id2);
         std::string target = "ALARM: ";
 
-        const std::string time_str_min = "00:00:00.00";
-        const std::string time_str_max = "11:00:00.00";
+        const std::string time_str_min = "09:30:00.00";
+        const std::string time_str_max = "09:40:00.00";
         int totalSecondsMin = convertTimeStringToSeconds(time_str_min);
         int totalSecondsMax = convertTimeStringToSeconds(time_str_max);
         int totalSeconds = convertTimeStringToSeconds(time_str);
@@ -100,7 +100,7 @@ int main(int argc, char *argv[]) {
 //        std::cout << "Total integer min seconds: " << totalSecondsMin << std::endl;
 
         if (totalSeconds < totalSecondsMin) {
-            std::cout << "skipping ..." << std::endl;
+//            std::cout << "skipping ..." << std::endl;
             continue;
         }
 
@@ -115,7 +115,7 @@ int main(int argc, char *argv[]) {
             data[j] = stoi(one_line_data[6 + j]);
         }
 
-        int8_t use_ai_model = 1;
+        int8_t use_ai_model = 0;
         // if (idx == 0)
         {
             // printf("process :%d, group:%s \n", i, group_id_tmp.c_str());
