@@ -1,5 +1,6 @@
 #include <string.h>
 #include <cmath>
+#include <unordered_set>
 #include "alg_cable_tem_detector.h"
 
 
@@ -40,7 +41,7 @@ static int alarmGB(int *_data, int8_t *_alarm_status, int8_t *_alarm_val, int _i
     int res = 0;
     for (int i = 0; i < ONE_GROUP_DATA_LENGTH; i++)
     {
-        if (_data[i] > ALARM_CONSTANT_TEMPERATUE_THRESHOLD)
+        if (_data[i] > ALARM_CONSTANT_TEMPERATUE_THRESHOLD && _data[i] < 120)
         {
             LOGD("alarm gb: %d \r\n", _data[i]);
             _alarm_status[_idx*ONE_GROUP_DATA_LENGTH + i] = 2;
@@ -118,28 +119,35 @@ int CableTemDet::updateBackgroundTemperature(int *_data, int _idx)
         }
         else
         {
+            m_timestamp_last = m_timestamp;
             return -11;
         }
     }
 
-    float ALPHA = 0.0005;
-    float ALPHA2 = 1 - ALPHA;
-    for (int i = 0; i < ONE_GROUP_DATA_LENGTH; i++)
+    int _update_cnt = m_timestamp - m_timestamp_last + 1;
+
+    for (int z = 0; z < _update_cnt; z++)
     {
-        if (judgeAnormalPoint(_data[i]) >= 0)
+        float ALPHA = 0.005; // 本底更新约30min完成完整更新
+        float ALPHA2 = 1 - ALPHA;
+        for (int i = 0; i < ONE_GROUP_DATA_LENGTH; i++)
         {
-            if (m_background_temperatures[_idx*ONE_GROUP_DATA_LENGTH + i] < -90)
+            if (judgeAnormalPoint(_data[i]) >= 0)
             {
-                m_background_temperatures[_idx*ONE_GROUP_DATA_LENGTH + i] = _data[i];
-            }
-            else
-            {
-                m_background_temperatures[_idx*ONE_GROUP_DATA_LENGTH + i] = ALPHA * _data[i] +
-            ALPHA2 * m_background_temperatures[_idx*ONE_GROUP_DATA_LENGTH + i];
+                if (m_background_temperatures[_idx * ONE_GROUP_DATA_LENGTH + i] < -90)
+                {
+                    m_background_temperatures[_idx * ONE_GROUP_DATA_LENGTH + i] = _data[i];
+                }
+                else
+                {
+                    m_background_temperatures[_idx * ONE_GROUP_DATA_LENGTH + i] = ALPHA * _data[i] +
+                                                                                  ALPHA2 * m_background_temperatures[_idx * ONE_GROUP_DATA_LENGTH + i];
+                }
             }
         }
     }
 
+    m_timestamp_last = m_timestamp;
     return 0;
 }
 
@@ -147,9 +155,19 @@ int CableTemDet::calSbtractBackground(float *_sbbg, int *_data, int _idx)
 {
     for (int i = 0; i < ONE_GROUP_DATA_LENGTH; i++)
     {
-        if (judgeAnormalPoint(_data[i])) continue;
-
-        _sbbg[_idx*ONE_GROUP_DATA_LENGTH + i] = _data[i] - m_background_temperatures[_idx*ONE_GROUP_DATA_LENGTH + i];
+        if (judgeAnormalPoint(_data[i])) {
+            this->m_points_status[_idx*ONE_GROUP_DATA_LENGTH + i] = 180;
+            m_background_temperatures[_idx*ONE_GROUP_DATA_LENGTH + i] = 0;
+            _sbbg[_idx*ONE_GROUP_DATA_LENGTH + i] = 0;
+        } else {
+            if (this->m_points_status[_idx*ONE_GROUP_DATA_LENGTH + i] == 0) {
+                _sbbg[_idx*ONE_GROUP_DATA_LENGTH + i] = _data[i] - m_background_temperatures[_idx*ONE_GROUP_DATA_LENGTH + i];
+            } else {
+                this->m_points_status[_idx*ONE_GROUP_DATA_LENGTH + i]--;
+                m_background_temperatures[_idx*ONE_GROUP_DATA_LENGTH + i] = _data[i];
+                _sbbg[_idx*ONE_GROUP_DATA_LENGTH + i] = 0;
+            }
+        }
     }
     int cnt = 0;
     for (int i = 0; i < ONE_GROUP_DATA_LENGTH; i++)
@@ -160,6 +178,8 @@ int CableTemDet::calSbtractBackground(float *_sbbg, int *_data, int _idx)
         }
     }
     // LOGD("_sbbg cnt: %d \r\n", cnt);
+
+    // 整体升温时报警抑制
     if (cnt > ONE_GROUP_DATA_LENGTH / 3)
     {
         m_alarm_suppression = true;
@@ -460,16 +480,16 @@ int CableTemDet::alarmTemperatureRise(float _temperature_rise_thre)
     {
         if (m_analyse_window[i].arch_count < 2) continue;
         int last_idx = m_analyse_window[i].arch_count - 1;
-        int start_id = 9999;
-        for (int j = m_analyse_window[i].arch_count - 2; j >= 0; j--)
-        {
-            if (m_analyse_window[i].archs[last_idx].timestamp - m_analyse_window[i].archs[j].timestamp >= ACC_TIME_THRESHOLD && (last_idx - start_id >= ACC_TIME_THRESHOLD))
-            {
-                break;
-            }
-            start_id = j;
-        }
-        if (start_id == 9999) continue;
+        int start_id = 0;
+        // for (int j = m_analyse_window[i].arch_count - 2; j >= 0; j--)
+        // {
+        //     if (m_analyse_window[i].archs[last_idx].timestamp - m_analyse_window[i].archs[j].timestamp >= ACC_TIME_THRESHOLD && (last_idx - start_id >= ACC_TIME_THRESHOLD))
+        //     {
+        //         break;
+        //     }
+        //     start_id = j;
+        // }
+        // if (start_id == 9999) continue;
         if (last_idx - start_id < ACC_TIME_THRESHOLD / 2) continue;
 
         float start_arch_val_max = -999.0;
@@ -479,10 +499,20 @@ int CableTemDet::alarmTemperatureRise(float _temperature_rise_thre)
             if (m_analyse_window[i].archs[start_id].temp[j] > start_arch_val_max) start_arch_val_max = m_analyse_window[i].archs[start_id].temp[j];
             if (m_analyse_window[i].archs[last_idx].temp[j] > last_arch_val_max) last_arch_val_max = m_analyse_window[i].archs[last_idx].temp[j];
         }
+
+        std::unordered_set<float> arch_val_max_set;
+        for (int k = start_id; k <= last_idx; k++) {
+            float arch_val_max = -999.0;
+            for (int j = 0; j < SAVE_ACTULLY_BUFFER_SIZE; j++) {
+                if (m_analyse_window[i].archs[k].temp[j] > arch_val_max) arch_val_max = m_analyse_window[i].archs[k].temp[j];
+            }
+            arch_val_max_set.insert(arch_val_max);
+        }
+
         float temp_diff = last_arch_val_max - start_arch_val_max;
         float time_diff = m_analyse_window[i].archs[last_idx].timestamp - m_analyse_window[i].archs[start_id].timestamp;
         if (time_diff < ACC_TIME_THRESHOLD) continue;
-        if ((temp_diff / time_diff) * 60 > _temperature_rise_thre)
+        if ((temp_diff / time_diff) * 60 > _temperature_rise_thre && arch_val_max_set.size() >= 3)
         {
             alarm = 1;
             m_alarm_status[m_analyse_window[i].archs[m_analyse_window[i].arch_count - 1].peak] = 1;
@@ -494,11 +524,11 @@ int CableTemDet::alarmTemperatureRise(float _temperature_rise_thre)
     }
     return alarm;
 }
-
+                    // 数据      组号         线缆号
 int CableTemDet::run(int *_data, int _idx, int _cable_idx, uint32_t _timestamp, int8_t _use_ai_model)
 {
     // LOGD("entry cable temperature detector algorithm idx:%d, cable_idx:%d \r\n", _idx, _cable_idx);
-    if (!m_init_flag)
+    if (!m_init_flag)  //初始化
     {
         return -1;
     }
@@ -511,14 +541,14 @@ int CableTemDet::run(int *_data, int _idx, int _cable_idx, uint32_t _timestamp, 
     m_timecount++;
     int res = 0;
     int alarm = 0;
-    if (_idx * 64 >= MAX_LENGTH || (_cable_idx < 0 || _cable_idx > 3))
+    if (_idx * 64 >= MAX_LENGTH || (_cable_idx < 0 || _cable_idx > 3)) //数据异常
     {
         return -2; // index out of max range
     }
 
-    processAbnormalData(_data);
+    // processAbnormalData(_data);     // 异常处理，-95的附近出现异常的43的数据，此处做处理，取消掉，另做策略，因为可能不只是43
 
-    res = updateBackgroundTemperature(_data, _idx);
+    res = updateBackgroundTemperature(_data, _idx); // 本di构建
     if (res < 0)
     {
         return res;
@@ -537,6 +567,7 @@ int CableTemDet::run(int *_data, int _idx, int _cable_idx, uint32_t _timestamp, 
         m_alarm_val[i] = 0;
     }
 
+    // 国标定温报警
     if (alarm_gb_switch_flag)
     {
         res = alarmGB(_data, m_alarm_status, m_alarm_val, _idx);
@@ -550,6 +581,7 @@ int CableTemDet::run(int *_data, int _idx, int _cable_idx, uint32_t _timestamp, 
     }
     calSbtractBackground(m_sbtract_background, _data, _idx);
 
+    // 整体升温时报警抑制                                   //早上存在大面积升温，导致异常报警。此处通过该逻辑处理
     static int suppression_cnt = 0;
     if (m_alarm_suppression)
     {
@@ -586,7 +618,7 @@ int CableTemDet::run(int *_data, int _idx, int _cable_idx, uint32_t _timestamp, 
     }
 
     // 错误点抑制
-    unanormalPointSuppression(m_current_temperatures, m_alarm_status, m_alarm_val, _idx, m_alarm_suppression);
+    unanormalPointSuppression(m_current_temperatures, m_alarm_status, m_alarm_val, _idx, m_alarm_suppression); //出现-95 等异常点通过此处处理，消除报警。
 
     if (alarm > 0)
     {
