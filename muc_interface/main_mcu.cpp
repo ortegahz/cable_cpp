@@ -90,8 +90,8 @@ int main(int argc, char *argv[]) {
         idx = stoi(group_id2);
         std::string target = "ALARM: ";
 
-        const std::string time_str_min = "09:30:00.00";
-        const std::string time_str_max = "09:40:00.00";
+        const std::string time_str_min = "09:00:00.00";
+        const std::string time_str_max = "10:00:00.00";
         int totalSecondsMin = convertTimeStringToSeconds(time_str_min);
         int totalSecondsMax = convertTimeStringToSeconds(time_str_max);
         int totalSeconds = convertTimeStringToSeconds(time_str);
@@ -116,7 +116,7 @@ int main(int argc, char *argv[]) {
         }
 
         int8_t use_ai_model = 0;
-        // if (idx == 0)
+        if (idx == 8)
         {
             // printf("process :%d, group:%s \n", i, group_id_tmp.c_str());
             res = alg_cable_temperature_detector_run(data, idx * 64, cable_idx, totalSeconds, alarmList, use_ai_model);
@@ -128,7 +128,7 @@ int main(int argc, char *argv[]) {
                            alarmList[j].addr, 0);
                 }
             }
-            printf("process :%d, res:%d \n", i, res);
+//            printf("process :%d, res:%d \n", i, res);
         }
 //        if (res > 0) break;
     }

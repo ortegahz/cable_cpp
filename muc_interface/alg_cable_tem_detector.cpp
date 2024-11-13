@@ -125,7 +125,6 @@ int CableTemDet::updateBackgroundTemperature(int *_data, int _idx)
     }
 
     int _update_cnt = m_timestamp - m_timestamp_last + 1;
-
     for (int z = 0; z < _update_cnt; z++)
     {
         float ALPHA = 0.005; // 本底更新约30min完成完整更新
@@ -146,8 +145,26 @@ int CableTemDet::updateBackgroundTemperature(int *_data, int _idx)
             }
         }
     }
-
     m_timestamp_last = m_timestamp;
+
+//    float ALPHA = 0.005; // 本底更新约30min完成完整更新
+//    float ALPHA2 = 1 - ALPHA;
+//    for (int i = 0; i < ONE_GROUP_DATA_LENGTH; i++)
+//    {
+//        if (judgeAnormalPoint(_data[i]) >= 0)
+//        {
+//            if (m_background_temperatures[_idx * ONE_GROUP_DATA_LENGTH + i] < -90)
+//            {
+//                m_background_temperatures[_idx * ONE_GROUP_DATA_LENGTH + i] = _data[i];
+//            }
+//            else
+//            {
+//                m_background_temperatures[_idx * ONE_GROUP_DATA_LENGTH + i] = ALPHA * _data[i] +
+//                                                                              ALPHA2 * m_background_temperatures[_idx * ONE_GROUP_DATA_LENGTH + i];
+//            }
+//        }
+//    }
+
     return 0;
 }
 
@@ -480,16 +497,16 @@ int CableTemDet::alarmTemperatureRise(float _temperature_rise_thre)
     {
         if (m_analyse_window[i].arch_count < 2) continue;
         int last_idx = m_analyse_window[i].arch_count - 1;
-        int start_id = 0;
-        // for (int j = m_analyse_window[i].arch_count - 2; j >= 0; j--)
-        // {
-        //     if (m_analyse_window[i].archs[last_idx].timestamp - m_analyse_window[i].archs[j].timestamp >= ACC_TIME_THRESHOLD && (last_idx - start_id >= ACC_TIME_THRESHOLD))
-        //     {
-        //         break;
-        //     }
-        //     start_id = j;
-        // }
-        // if (start_id == 9999) continue;
+        int start_id = 9999;
+        for (int j = m_analyse_window[i].arch_count - 2; j >= 0; j--)
+        {
+            if (m_analyse_window[i].archs[last_idx].timestamp - m_analyse_window[i].archs[j].timestamp >= ACC_TIME_THRESHOLD && (last_idx - start_id >= ACC_TIME_THRESHOLD))
+            {
+                break;
+            }
+            start_id = j;
+        }
+        if (start_id == 9999) continue;
         if (last_idx - start_id < ACC_TIME_THRESHOLD / 2) continue;
 
         float start_arch_val_max = -999.0;
@@ -511,6 +528,7 @@ int CableTemDet::alarmTemperatureRise(float _temperature_rise_thre)
 
         float temp_diff = last_arch_val_max - start_arch_val_max;
         float time_diff = m_analyse_window[i].archs[last_idx].timestamp - m_analyse_window[i].archs[start_id].timestamp;
+//        std::cout << "timestamp last " << m_analyse_window[i].archs[last_idx].timestamp << " & timestamp start " << m_analyse_window[i].archs[start_id].timestamp << std::endl;
         if (time_diff < ACC_TIME_THRESHOLD) continue;
         if ((temp_diff / time_diff) * 60 > _temperature_rise_thre && arch_val_max_set.size() >= 3)
         {
@@ -520,10 +538,62 @@ int CableTemDet::alarmTemperatureRise(float _temperature_rise_thre)
             // notice: LOG不要太复杂，否则可能栈爆掉
             LOGD("[DEBUG][%d] rise: track_id: %d, archs num: %d, alarm: %d, rise_rate: %.2f, peakid: %d\r\n",m_idx, m_analyse_window[i].arch_id, m_analyse_window[i].arch_count, alarm,  (temp_diff / time_diff) * 60, m_analyse_window[i].archs[m_analyse_window[i].arch_count - 1].peak);
         }
-        //LOGD("[DEBUG][%d] alarm temp rise: track_id: %d, archs num: %d, alarm: %d, temp_diff：%.1f, time_diff: %.1f, rise_rate: %.2f, val1:%.2f, val2:%.2f, peakid: %d \r\n", m_idx, m_analyse_window[i].arch_id, m_analyse_window[i].arch_count, alarm, temp_diff, time_diff, (temp_diff / time_diff) * 60, last_arch_val_max, start_arch_val_max, m_analyse_window[i].archs[m_analyse_window[i].arch_count - 1].peak);
+//        LOGD("[DEBUG][%d] alarm temp rise: track_id: %d, archs num: %d, alarm: %d, temp_diff：%.1f, time_diff: %.1f, rise_rate: %.2f, val1:%.2f, val2:%.2f, peakid: %d \r\n", m_idx, m_analyse_window[i].arch_id, m_analyse_window[i].arch_count, alarm, temp_diff, time_diff, (temp_diff / time_diff) * 60, last_arch_val_max, start_arch_val_max, m_analyse_window[i].archs[m_analyse_window[i].arch_count - 1].peak);
     }
     return alarm;
 }
+
+int CableTemDet::run_all(int *_data, int _idx, int _cable_idx, uint32_t _timestamp, int8_t _use_ai_model)
+{
+    int res = 0;
+
+    // update m_current_temperatures
+    for (int i = 0; i < ONE_GROUP_DATA_LENGTH; i++)
+    {
+        m_current_temperatures[_idx + i] = _data[i];
+    }
+
+    if (m_timestamp_suppose < 0) m_timestamp_suppose = _timestamp;
+
+    if (_timestamp < m_timestamp_suppose) return res;
+
+    while (_timestamp >= m_timestamp_suppose)
+    {
+        for (int i = 0; i < MAX_LENGTH; i += ONE_GROUP_DATA_LENGTH) {
+            int data[ONE_GROUP_DATA_LENGTH];
+            int data_m[ONE_GROUP_DATA_LENGTH];
+            for (int j = 0; j < ONE_GROUP_DATA_LENGTH; j++) {
+//                data[j] = _data[j];
+                data[j] = m_current_temperatures[i + j];
+            }
+            int idx = i / ONE_GROUP_DATA_LENGTH;
+//            if (idx != 8) continue;
+
+//            std::cout << "data_k -->";
+//            for (int k = 0; k < ONE_GROUP_DATA_LENGTH; k++) {
+//                std::cout << " " << data[k];
+//            }
+//            std::cout << std::endl;
+//
+//            std::cout << "data_m -->";
+//            for (int k = 0; k < ONE_GROUP_DATA_LENGTH; k++) {
+//                std::cout << " " << data_m[k];
+//            }
+//            std::cout << std::endl;
+
+//            std::cout << "[cmp] idx -->" << idx << std::endl;
+//            std::cout << "[cmp] m_timestamp_suppose -->" << m_timestamp_suppose << std::endl;
+            if (this->run(data, idx, _cable_idx, m_timestamp_suppose, _use_ai_model) > 0) res++;
+//            printf("m_alarm_status --> %d \r\n", m_alarm_status[570]);
+        }
+        if (res > 0) return res;
+//        std::cout << "m_timestamp_suppose -->" << m_timestamp_suppose << std::endl;
+        m_timestamp_suppose++;  // add 1s
+    }
+
+    return res;
+}
+
                     // 数据      组号         线缆号
 int CableTemDet::run(int *_data, int _idx, int _cable_idx, uint32_t _timestamp, int8_t _use_ai_model)
 {
@@ -532,6 +602,12 @@ int CableTemDet::run(int *_data, int _idx, int _cable_idx, uint32_t _timestamp, 
     {
         return -1;
     }
+
+//    std::cout << "_data -->";
+//    for (int k = 0; k < ONE_GROUP_DATA_LENGTH; k++) {
+//        std::cout << " " << _data[k];
+//    }
+//    std::cout << std::endl;
 
     m_use_ai_model = _use_ai_model;
     m_alarm_suppression = false;

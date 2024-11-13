@@ -31,4 +31,12 @@ add_executable(${EXCUtTE_NAME}
         alg_cable_tem_detector_interface.cpp
         alg_cable_tem_detector.cpp
         ai_shape_inference_pc.cpp)
-target_link_libraries(${EXCUtTE_NAME} ${TFLITE_LIBRARY_DIR}/lib/libtensorflowlite_c.so)  # 修改dll为so
+target_link_libraries(${EXCUtTE_NAME} ${TFLITE_LIBRARY_DIR}/lib/libtensorflowlite_c.so)
+
+set(EXCUtTE_NAME mcu_log)
+add_executable(${EXCUtTE_NAME}
+        main_mcu_log.cpp
+        alg_cable_tem_detector_interface.cpp
+        alg_cable_tem_detector.cpp
+        ai_shape_inference_pc.cpp)
+target_link_libraries(${EXCUtTE_NAME} ${TFLITE_LIBRARY_DIR}/lib/libtensorflowlite_c.so)

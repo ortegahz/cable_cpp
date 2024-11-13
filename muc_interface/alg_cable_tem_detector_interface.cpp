@@ -60,6 +60,8 @@ int alg_cable_temperature_detector_run(int8_t *_data, int _idx, int _cable_idx, 
 
     if (_cable_idx == 0)
     {
+        std::cout << "[cmp] idx -->" << idx << std::endl;
+        std::cout << "[cmp] _timestamp -->" << _timestamp << std::endl;
         res = cable_tem_detector0.run(data, idx, _cable_idx, _timestamp, _use_ai_model);
         if (res > 0) res = getAlarmInfo(cable_tem_detector0, alarm_info);
     }
@@ -76,6 +78,52 @@ int alg_cable_temperature_detector_run(int8_t *_data, int _idx, int _cable_idx, 
     else if (_cable_idx == 3)
     {
         res = cable_tem_detector3.run(data, idx, _cable_idx, _timestamp, _use_ai_model);
+        if (res > 0) res = getAlarmInfo(cable_tem_detector3, alarm_info);
+    }
+    else
+    {
+        res = -10;
+    }
+
+    return res;
+}
+
+int alg_cable_temperature_detector_run_all(int8_t *_data, int _idx, int _cable_idx, uint32_t _timestamp, AlarmInfo *alarm_info, int8_t _use_ai_model)
+{
+    //LOGD("CableTemDetTest run idx:%d, cable_idx:%d \r\n", _idx, _cable_idx);
+    int data[ONE_GROUP_DATA_LENGTH];
+    for (int i = 0; i < ONE_GROUP_DATA_LENGTH; i++)
+    {
+        data[i] = _data[i];
+    }
+    int res = 0;
+
+    // 清空报警状态；
+    for (int i = 0; i < ALARM_INFO_MAX_NUM; i++)
+    {
+        alarm_info[i].alarm_type = 0;
+        alarm_info[i].alarm_temp = -88;
+        alarm_info[i].addr = -99;
+    }
+
+    if (_cable_idx == 0)
+    {
+        res = cable_tem_detector0.run_all(data, _idx, _cable_idx, _timestamp, _use_ai_model);
+        if (res > 0) res = getAlarmInfo(cable_tem_detector0, alarm_info);
+    }
+    else if (_cable_idx == 1)
+    {
+        res = cable_tem_detector1.run_all(data, _idx, _cable_idx, _timestamp, _use_ai_model);
+        if (res > 0) res = getAlarmInfo(cable_tem_detector1, alarm_info);
+    }
+    else if (_cable_idx == 2)
+    {
+        res = cable_tem_detector2.run_all(data, _idx, _cable_idx, _timestamp, _use_ai_model);
+        if (res > 0) res = getAlarmInfo(cable_tem_detector2, alarm_info);
+    }
+    else if (_cable_idx == 3)
+    {
+        res = cable_tem_detector3.run_all(data, _idx, _cable_idx, _timestamp, _use_ai_model);
         if (res > 0) res = getAlarmInfo(cable_tem_detector3, alarm_info);
     }
     else

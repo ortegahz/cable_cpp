@@ -95,6 +95,7 @@ public:
     ~CableTemDet();
     int init(int _control);
     int run(int *_data, int _idx, int _cable_idx, uint32_t _timestamp, int8_t _use_ai_model);
+    int run_all(int *_data, int _idx, int _cable_idx, uint32_t _timestamp, int8_t _use_ai_model);
     int8_t m_alarm_status[MAX_LENGTH];
     int8_t m_alarm_val[MAX_LENGTH];
 
@@ -116,7 +117,8 @@ private:
     int calSbtractBackground(float *_sbbg, int *_data, int _idx);
     int m_timestamp = 0;
     int m_timecount = 0;
-    int m_timestamp_last = 0;
+    int m_timestamp_last = -1;
+    int m_timestamp_suppose = -1;
 
     PeakInfo peaks_info[MAX_LENGTH];
     PeakInfo result_peak_info[MAX_LENGTH];
