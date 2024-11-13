@@ -53,7 +53,7 @@
 #define FIND_PEAK_TEMP_TH  2.5
 #define ANALYSE_WINDOW_MAX  16
 
-#define ALARM_CONSTANT_TEMPERATUE_THRESHOLD 100
+#define ALARM_CONSTANT_TEMPERATUE_THRESHOLD 75
 #define ALARM_ARCH_TREND_TH  4
 #define ALARM_ARCH_RATIO_TH  0.8
 #define ALARM_TEMPERATURE_RISE_THRESHLOD 8.0
@@ -110,10 +110,13 @@ private:
     float m_background_temperatures[MAX_LENGTH] = {};
     int m_current_temperatures[MAX_LENGTH] = {0};
     float m_sbtract_background[MAX_LENGTH] = {0};
+    int m_points_status[MAX_LENGTH] = {0};
+
     int updateBackgroundTemperature(int *_data, int _idx);
     int calSbtractBackground(float *_sbbg, int *_data, int _idx);
     int m_timestamp = 0;
     int m_timecount = 0;
+    int m_timestamp_last = 0;
 
     PeakInfo peaks_info[MAX_LENGTH];
     PeakInfo result_peak_info[MAX_LENGTH];
