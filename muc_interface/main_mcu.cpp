@@ -90,8 +90,8 @@ int main(int argc, char *argv[]) {
         idx = stoi(group_id2);
         std::string target = "ALARM: ";
 
-        const std::string time_str_min = "09:00:00.00";
-        const std::string time_str_max = "10:00:00.00";
+        const std::string time_str_min = "09:30:00.00";
+        const std::string time_str_max = "09:40:00.00";
         int totalSecondsMin = convertTimeStringToSeconds(time_str_min);
         int totalSecondsMax = convertTimeStringToSeconds(time_str_max);
         int totalSeconds = convertTimeStringToSeconds(time_str);

@@ -104,8 +104,8 @@ int main(int argc, char *argv[]) {
         }
 
         int totalSeconds = convertTimeStringToSeconds(time_str);
-        const std::string time_str_min = "09:00:00.00";
-        const std::string time_str_max = "10:30:00.00";
+        const std::string time_str_min = "00:00:00.00";
+        const std::string time_str_max = "23:40:00.00";
         int totalSecondsMin = convertTimeStringToSeconds(time_str_min);
         int totalSecondsMax = convertTimeStringToSeconds(time_str_max);
 
@@ -118,6 +118,7 @@ int main(int argc, char *argv[]) {
 //        std::cout << "time_str -->" << time_str << std::endl;
 
         std::cout << "time_str -->" << time_str << std::endl;
+        std::cout << "totalSeconds -->" << totalSeconds << std::endl;
 
         // 调用温度检测函数，传入start_idx
         int8_t use_ai_model = 0;

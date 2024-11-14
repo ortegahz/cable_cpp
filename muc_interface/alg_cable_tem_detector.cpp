@@ -671,7 +671,7 @@ int CableTemDet::run(int *_data, int _idx, int _cable_idx, uint32_t _timestamp, 
 
     // 寻找差值数据的波峰
     res = findPeaks(m_sbtract_background, FIND_PEAK_WINDOW_SIZE, FIND_PEAK_TEMP_TH);
-    if (res > 0) LOGD("[DEBUG] peak_idx.size(): %d, peak:%d\r\n", result_peak_count, result_peak_info[0].index);
+    if (res > 0) LOGD("[DEBUG] peak_idx.size(): %d, peak:%d with temp %d at %d \r\n", result_peak_count, result_peak_info[0].index, m_current_temperatures[result_peak_info[0].index], _timestamp);
 
     // 检测与跟踪算法的关键参数----拱形(arch)
     detactArch(_data, _idx, m_sbtract_background, MAX_LENGTH, FIND_PEAK_WINDOW_SIZE);
