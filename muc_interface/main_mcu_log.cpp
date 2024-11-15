@@ -86,6 +86,8 @@ int main(int argc, char *argv[]) {
     AlarmInfo alarmList[ALARM_INFO_MAX_NUM];
     alg_cable_temperature_detector_init(control_flag);
 
+//    string log_data_path = "/home/manu/tmp/split_logs_1114/heta-cable_00000002333232373739393630353737_1_1.log";
+//    string log_data_path = "/home/manu/tmp/split_logs_1115/heta-cable_00000002333232373739393630353737_1_1.log - standard";
     string log_data_path = "/home/manu/tmp/split_logs/heta-cable_00000002333232373739393630353737_1_1.log";
     std::vector<std::vector<std::string>> data_raw = readLog(log_data_path);
 
